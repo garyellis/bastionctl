@@ -1,7 +1,7 @@
 import aws
 import cf_templates
 
-def get_bastion_template(vpc_id, name, profile, region='us-west-2'):
+def get_bastion_template(name, vpc_id, bastion_sg_ingress, profile, region='us-west-2'):
     """
     Sets up the bastion template parameters and returns the bastion cloudformation template
     """
@@ -15,6 +15,6 @@ def get_bastion_template(vpc_id, name, profile, region='us-west-2'):
         instance_type='t2.small',
         subnet_id=public_subnet_id,
         vpc_id=vpc_id,
-        bastion_sg_ingress='72.201.74.192/32',
+        bastion_sg_ingress=bastion_sg_ingress,
         sg_ids=security_group_ids
     )

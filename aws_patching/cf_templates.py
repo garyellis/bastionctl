@@ -30,7 +30,7 @@ def create_bastion_template(name, ami_id, instance_type, subnet_id, vpc_id, bast
     pass
 
     t = Template()
-    t.add_description('Rendered by python troposphere')
+    t.add_description('Rendered by infiniti ec2-patching cli')
 
     # setup our bastion security group and ec2 instance
     bastion_sg = cf_resources.security_group(
