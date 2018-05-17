@@ -2,19 +2,18 @@ from distutils.core import setup
 from setuptools import setup, find_packages
 
 setup(
-    name='aws_patching',
+    name='ec2_patching',
     version='0.1.0',
-    description='AWS patching helpers',
+    description='EC2 patching helpers',
     author='Gary Ellis',
-    author_email='gary.luis.ellis@gmail.com',
+    author_email='gellis@infiniticg.com',
     packages=find_packages(),
     entry_points={
-        'console_scripts': ['ec2-patching = aws_patching.cli:cli']
+        'console_scripts': ['ec2-patching = ec2_patching.cli:cli']
     },
     install_requires=[
       'boto3',
       'click',
-      'pycrypto',
       'troposphere'
     ]
 )

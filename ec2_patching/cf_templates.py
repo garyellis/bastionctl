@@ -1,7 +1,7 @@
 from troposphere import Template
 from troposphere import GetAtt
 from troposphere import Ref
-from aws_patching import cf_resources
+from ec2_patching import cf_resources
 
 # this can be genericised and placed into cf_resources module
 def sg_ingress_allow_bastion_ip(bastion_ip, sg_ids):
@@ -23,7 +23,7 @@ def sg_ingress_allow_bastion_ip(bastion_ip, sg_ids):
         )
     return rules
 
-def create_bastion_template(name, ami_id, instance_type, subnet_id, vpc_id, bastion_sg_ingress, sg_ids):
+def create_bastion_template(name, ami_id, instance_type, key_name, subnet_id, vpc_id, bastion_sg_ingress, sg_ids):
     """
     Returns the  bastion cloudformation template
     """
@@ -74,7 +74,7 @@ def create_bastion_template(name, ami_id, instance_type, subnet_id, vpc_id, bast
     bastion_instance = cf_resources.ec2_instance(
       name=name,
       ami_id=ami_id,
-      keyname='',
+      keyname=key_name,
       instance_type=instance_type,
       sg_ids=[Ref(bastion_sg)],
       subnet_id=subnet_id
