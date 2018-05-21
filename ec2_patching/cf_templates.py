@@ -1,7 +1,11 @@
 from troposphere import Template
 from troposphere import GetAtt
 from troposphere import Ref
+from troposphere import Join
 from ec2_patching import cf_resources
+import logging
+
+
 
 # this can be genericised and placed into cf_resources module
 def sg_ingress_allow_bastion_ip(bastion_ip, sg_ids):
@@ -27,8 +31,7 @@ def create_bastion_template(name, ami_id, instance_type, key_name, subnet_id, vp
     """
     Returns the  bastion cloudformation template
     """
-    pass
-
+#    logger.debug('creating bastion template')
     t = Template()
     t.add_description('Rendered by infiniti ec2-patching cli')
 
@@ -54,8 +57,8 @@ def create_bastion_template(name, ami_id, instance_type, key_name, subnet_id, vp
       name=bastion_sg_egress_tcp_name,
       desc=bastion_sg_egress_tcp_name,
       ip_protocol='tcp',
-      from_port='-1',
-      to_port='-1',
+      from_port='0',
+      to_port='65535',
       group_id=Ref(bastion_sg),
       cidr='0.0.0.0/0'
     )
@@ -65,8 +68,8 @@ def create_bastion_template(name, ami_id, instance_type, key_name, subnet_id, vp
       name=bastion_sg_egress_udp_name,
       desc=bastion_sg_egress_udp_name,
       ip_protocol='udp',
-      from_port='-1',
-      to_port='-1',
+      from_port='0',
+      to_port='65535',
       group_id=Ref(bastion_sg),
       cidr='0.0.0.0/0'
     )   
@@ -82,7 +85,7 @@ def create_bastion_template(name, ami_id, instance_type, key_name, subnet_id, vp
 
     # allow sg ingress on to the bastion ip
     sg_ingress_bastion_ip = sg_ingress_allow_bastion_ip(
-        bastion_ip=GetAtt(bastion_instance, 'PrivateIp'),
+        bastion_ip=Join("", [GetAtt(bastion_instance, 'PrivateIp'), "/32"]),
         sg_ids=sg_ids
     )
 

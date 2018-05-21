@@ -1,5 +1,8 @@
 import ec2_patching.commands
+import ec2_patching.helpers
 import click
+
+
 
 class Opts(object):
     def __init(self):
@@ -11,6 +14,11 @@ pass_opts = click.make_pass_decorator(Opts, ensure=True)
 
 @click.group()
 @click.option(
+    '--log-level',
+    default='INFO',
+    help='the logging level'
+)
+@click.option(
     '--profile',
     required=False,
     help='the aws credential profile')
@@ -20,10 +28,13 @@ pass_opts = click.make_pass_decorator(Opts, ensure=True)
     help='the aws region. Defaults to us-west-2'
 )
 @pass_opts
-def cli(opts, profile, region):
+def cli(opts, log_level, profile, region):
+    """
+    """
+    logger = ec2_patching.helpers.setup_logging(log_level)
+    logger.debug('log level: {}'.format(log_level))
     opts.profile = profile
     opts.region = region
-
 
 
 @click.group(name='list')
@@ -81,7 +92,7 @@ def gen_template(opts, allow_ip, ami_id, instance_type, key_name, name, vpc_id):
 @click.option('--name', help='the name of the bastion related resources')
 @click.option('--vpc-id',required=True)
 @pass_opts
-def create_stack(opts, allow_ip, ami_id, name, instance_type, vpc_id):
+def create_stack(opts, allow_ip, ami_id, instance_type, key_name, name, vpc_id):
     """
     Creates the bastion cloudformation stack
     """

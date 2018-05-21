@@ -42,7 +42,7 @@ def ec2_instance(name, ami_id, keyname, instance_type, sg_ids, subnet_id):
       ImageId=ami_id,
       InstanceType=instance_type,
       KeyName=keyname,
-      SecurityGroups=sg_ids,
+      SecurityGroupIds=sg_ids,
       SubnetId=subnet_id,
       Tags=tags(name)
     )
