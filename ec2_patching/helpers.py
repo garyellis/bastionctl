@@ -4,11 +4,6 @@ import logging.config
 def setup_logging(log_level):
     """
     """
-#    logging.config.dictConfig({
-#        'version': 1,
-#        'disable_existing_loggers': False,
-#    })
-
     if log_level in ['INFO', 'CRITICAL']:
         logging.getLogger('botocore').setLevel(logging.CRITICAL)
     if log_level in ['DEBUG']:

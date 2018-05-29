@@ -3,7 +3,6 @@ import re
 from troposphere import (
   GetAtt,
   Join,
-  Output,
   Ref,
   Tags,
   Template
@@ -11,6 +10,7 @@ from troposphere import (
 
 from troposphere.ec2 import (
   Instance,
+  NetworkInterfaceProperty,
   SecurityGroup,
   SecurityGroupEgress,
   SecurityGroupIngress,
@@ -36,16 +36,28 @@ def tags(name):
 def ec2_instance(name, ami_id, keyname, instance_type, sg_ids, subnet_id):
     """
     """
+    # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-instance.html
     resource_name = '{}EC2Instance'.format(sanitize_resource_name(name))
     return Instance(
       resource_name,
       ImageId=ami_id,
       InstanceType=instance_type,
       KeyName=keyname,
-      SecurityGroupIds=sg_ids,
-      SubnetId=subnet_id,
+      NetworkInterfaces=[NetworkInterfaceProperty(
+        AssociatePublicIpAddress=True,
+        DeviceIndex=0,
+        GroupSet=sg_ids,
+        SubnetId=subnet_id,
+      )],
+      #SecurityGroupIds=sg_ids,
+      #SubnetId=subnet_id,
       Tags=tags(name)
     )
+
+def ec2_instance_outputs(name):
+    """
+    """
+    outputs = []
 
 
 def security_group(name, desc, vpc_id):
@@ -96,3 +108,9 @@ def add_template_resources(template, resources=[]):
     """
     for i in resources:
         template.add_resource(i)
+
+def add_template_outputs(template, outputs=[]):
+    """
+    """
+    for i in outputs:
+        template.add_output(i)
