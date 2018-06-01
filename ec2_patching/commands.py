@@ -3,8 +3,18 @@ from ec2_patching import keypairs
 from ec2_patching import cf_templates
 from ec2_patching import cf
 import logging
+import tabulate
 
 logger = logging.getLogger(__name__)
+
+# vpc group commands
+def vpc_list(profile, region):
+    """
+    Lists vpcs info
+    """
+    session = aws.get_session(profile_name=profile, region_name=region)
+    vpcs = aws.get_vpcs(session)
+    print tabulate.tabulate(vpcs, headers='keys')
 
 # bastion group commands
 def gen_bastion_template(name, ami_id, instance_type, key_name, vpc_id, bastion_sg_ingress, profile, region):
@@ -22,6 +32,8 @@ def gen_bastion_template(name, ami_id, instance_type, key_name, vpc_id, bastion_
     
     logger.info('using vpc_id: {}, subnet_id: {}'.format(vpc_id, public_subnet_id))
     logger.info('allow instance ip on security group ids: {}'.format(' '.join(security_group_ids)))
+
+    # add a template validation before returning template body
     return cf_templates.create_bastion_template(
         name=name,
         ami_id=ami_id,
@@ -47,11 +59,17 @@ def create_bastion(name, ami_id, instance_type, key_name, ssh_public_key, vpc_id
 
     template = gen_bastion_template(name, ami_id, instance_type, key_name, vpc_id, bastion_sg_ingress, profile, region)
     logger.info('creating the cloudformation stack {}'.format(name))
+
+    # add stack tag to mark stacks created by the cli
     cf.create_stack(
         session,
         name,
         template
     )
+
+    stack_outputs = cf.get_stack_outputs(session, name)
+    logger.info('stack outputs: {}'.format(stack_outputs))
+    logger.info('bastion create complete')
 
 def delete_bastion(delete_keypair, name, profile, region):
     """
@@ -63,14 +81,17 @@ def delete_bastion(delete_keypair, name, profile, region):
         keypairs.delete_keypair(session, name)
 
     logger.info('deleting the cloudformation stack {}'.format(name))
+
+    # delete the stack if the stack was created by the cli
     cf.delete_stack(
         session,
         name
     )
 
-def ssh(name, region):
+def ssh(name, profile, region):
     """
     ssh into the bastion instance
     """
-    return
-    # os.system('ssh -tt -A ubuntu@34.219.250.189')
+    session = aws.get_session(profile_name=profile, region_name=region)
+    stack_outputs = cf.get_stack_outputs(session, name)
+    #os.system('ssh -tt -A ubuntu@34.219.250.189')

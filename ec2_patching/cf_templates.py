@@ -32,11 +32,11 @@ def ec2_instance_outputs(name, instance):
     """
     """
     outputs = []
-#    outputs.append(Output(
-#        "{}PublicIp".format(name),
-#        Description="Bastion public Ip address",
-#        Value=GetAtt(instance, 'PublicIp')
-#    ))
+    outputs.append(Output(
+        "{}PublicIp".format(name),
+        Description="Bastion public Ip address",
+        Value=GetAtt(instance, 'PublicIp')
+    ))
     outputs.append(Output(
         "{}PrivateIp".format(name),
         Description="Bastion private Ip address",

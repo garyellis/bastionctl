@@ -37,21 +37,21 @@ def cli(opts, log_level, profile, region):
     opts.region = region
 
 
-@click.group(name='list')
-def list_group():
+@click.group(name='vpc')
+def vpc_group():
     """
-    Commands for listing ec2 resources
+    Commands for viewing vpc resources
     """
 
-@list_group.command(name='vpcs')
+@vpc_group.command(name='list')
 @click.option('--name', help='filter vpcs by name')
 @click.option('--cidr', help='filter vpcs by cidr')
 @pass_opts
-def list_vpcs(opts, name, cidr):
+def vpcs_list(opts, name, cidr):
     """
     List vpcs
     """
-
+    ec2_patching.commands.vpc_list(opts.profile, opts.region)
 
 @click.group(name='bastion')
 def bastion_group():
@@ -125,4 +125,4 @@ def delete_stack(opts, delete_keypair, name):
     )
 
 cli.add_command(bastion_group)
-cli.add_command(list_group)
+cli.add_command(vpc_group)

@@ -16,7 +16,8 @@ def import_keypair(session, name, public_key_material):
             PublicKeyMaterial=public_key_material
         )
     except botocore.exceptions.ClientError as err:
-        logger.error(err['Error']['Message'])
+        logger.error(err)
+        keypair = {'KeyName': name}
     
     return keypair['KeyName']
 

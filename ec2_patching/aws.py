@@ -1,6 +1,7 @@
 import boto3
 from botocore.exceptions import ClientError
 from operator import itemgetter
+from collections import OrderedDict
 
 def get_session(profile_name,region_name='us-west-2'):
     """
@@ -78,9 +79,8 @@ def get_route_table_association(subnet_id, route_tables):
                 return rtb
 
 
-def get_first_public_subnet_id(session, vpc_id):
+def get_public_subnet_ids(session, vpc_id):
     """
-    Returns the first public subnet id ordered by az
     1. is the subnet associated to a route table
     2. if no check if the main route table is public
     3. if yes check if the subnet is associated to a public route table
@@ -108,7 +108,13 @@ def get_first_public_subnet_id(session, vpc_id):
             public_subnets.append(subnet)
             public_subnet_ids.append(subnet['SubnetId'])
 
-    # if the list is empty we could not find a public subnet
+    return public_subnet_ids
+
+def get_first_public_subnet_id(session, vpc_id):
+    """
+    Returns the first public subnet ordered by az
+    """
+    public_subnet_ids = get_public_subnet_ids(session, vpc_id)
     if public_subnet_ids:
         return public_subnet_ids[0]
 
@@ -121,3 +127,85 @@ def get_security_group_ids(session, vpc_id):
     security_groups = client.describe_security_groups(**filter_vpc_id(vpc_id))['SecurityGroups']
     security_group_ids = [sg['GroupId'] for sg in security_groups if not get_tag_value(sg.get('Tags'), key=exclude_tag)]
     return security_group_ids
+
+def get_subnets(session):
+    """
+    """
+    
+
+def get_vpc_summary(session, vpc_id):
+    """
+    """
+    client = session.client('ec2')
+    vpc = client.describe_vpcs(**filter_vpc_id(vpc_id))['Vpcs']
+    # VpcId
+    # CidrBlock
+    # IsDefault
+    # tag:Name
+
+def get_in_use_enis(session, vpc_id):
+    """
+
+    """
+    client = session.client('ec2')
+    eni_filter = filter_vpc_id(vpc_id)
+    eni_filter['Filters'].append({'Name': 'status', 'Values': ['in-use']})
+    enis = client.describe_network_interfaces(**eni_filter)['NetworkInterfaces']
+    return enis
+
+def count_eip_enis(enis):
+    """
+    Returns the count of of enis with an elastic ip (primary ip only)
+    """
+    eni_eips = []
+    for eni in enis:
+        association = eni.get('Association')
+        if association:
+            if association['IpOwnerId'] != 'amazon':
+                eni_eips.append(eni)
+    return len(eni_eips)
+
+def count_public_enis(enis):
+    """
+    Returns the count of enis with a public ip (elastic ip or amazon owned ip) (primary ip only)
+    """
+    public_enis = [eni for eni in enis if eni.get('Association')]
+    return len(public_enis)
+
+
+def count_private_enis(enis):
+    """
+    Returns the count of enis without a public ip. (primary ip only)
+    """
+    private_enis = [eni for eni in enis if not eni.get('Association')]
+    return len(private_enis)
+
+def get_vpcs(session):
+    """
+    Returns a list of vpcs information
+    """
+    client = session.client('ec2')
+    vpcs = client.describe_vpcs()['Vpcs']
+    records = []
+    for vpc in vpcs:
+        in_use_enis = get_in_use_enis(session, vpc['VpcId'])
+        subnets = client.describe_subnets(**filter_vpc_id(vpc['VpcId']))['Subnets']
+        vpc_tags = vpc.get('Tags', [])
+
+        records.append(OrderedDict([
+            ('vpc_id', vpc['VpcId']),
+            ('tag_name', get_tag_value(vpc_tags)),
+            ('cidr', vpc['CidrBlock']),
+            ('default_vpc', vpc['IsDefault']),
+            ('has_natgw', False),
+            ('has_igw', False),
+            ('enis_prv', count_private_enis(in_use_enis)),
+            ('enis_pub', count_public_enis(in_use_enis)),
+            ('eni_eips', count_eip_enis(in_use_enis)),
+            ('enis_total', len(in_use_enis)),
+            ('sgs_total', len(get_security_group_ids(session, vpc['VpcId']))),
+            ('subnets_pub', len(get_public_subnet_ids(session, vpc['VpcId']))),
+            ('subnets_total', len(subnets)),
+            ('tags', '')
+        ]))
+    return records

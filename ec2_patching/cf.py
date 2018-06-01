@@ -1,14 +1,3 @@
-"""
-1. create the stack
-2. get the stack status
-   - cf_client.describe_stacks(StackName='')[0]['StackStatus']
-3. log recent events if not completed
-    - cf_client.describe_stack_events(StackName='')
-4. when status is complete finish
-
-
-"""
-
 from datetime import datetime, timedelta
 from dateutil.tz import tzutc
 import time
@@ -126,13 +115,18 @@ def create_stack(session, stack_name, template_body):
     creates the cloudformation stack
     """
     client = session.client('cloudformation')
-    stack = client.create_stack(
-        StackName=stack_name,
-        TemplateBody=template_body
-    )
+    try:
+        stack = client.create_stack(
+            StackName=stack_name,
+            TemplateBody=template_body
+        )
+    except botocore.exceptions.ClientError as err:
+        logger.error(err)
+        exit(1)
+
     status = wait_for_completion(session, stack_name)
     if status != StackStatus.COMPLETE:
-        logger.error('create stack failed')
+        logger.error('create stack failed with status: {}'.format(status))
         exit(1)
 
     logger.info('create stack complete')
@@ -160,4 +154,13 @@ def delete_stack(session, stack_name):
         exit(1)
 
     logger.info('delete stack complete.')
+
+def get_stack_outputs(session, name):
+    """
+    Returns the outputs for the given cloudformation stack
+    """
+    client = session.client('cloudformation')
+    stack_outputs = client.describe_stacks(StackName=name)['Stacks']
+    if stack_outputs:
+        return stack_outputs[0]['Outputs']
 
