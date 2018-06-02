@@ -1,3 +1,4 @@
+import ec2_patching.config as config
 from datetime import datetime, timedelta
 from dateutil.tz import tzutc
 import time
@@ -112,13 +113,17 @@ def wait_for_completion(session, stack_name):
 
 def create_stack(session, stack_name, template_body):
     """
-    creates the cloudformation stack
+    Creates the cloudformation stack
     """
     client = session.client('cloudformation')
     try:
         stack = client.create_stack(
             StackName=stack_name,
-            TemplateBody=template_body
+            TemplateBody=template_body,
+            Tags=[
+                {'Key': config.cli_tag_key, 'Value': config.cli_tag_value },
+                {'Key': '{}-version'.format(config.cli_tag_key), 'Value': config.cli_version }
+            ]
         )
     except botocore.exceptions.ClientError as err:
         logger.error(err)
@@ -163,4 +168,18 @@ def get_stack_outputs(session, name):
     stack_outputs = client.describe_stacks(StackName=name)['Stacks']
     if stack_outputs:
         return stack_outputs[0]['Outputs']
+
+def validate_template(session, template_body):
+    """
+    Validates the cloudformation template
+    """
+    client = session.client('cloudformation')
+    logger.info('validating template')
+    try:
+        client.validate_template(TemplateBody=template_body)
+    except botocore.exceptions.ClientError as err:
+        logger.error(err)
+        exit(1)
+
+    logger.info('validate template done')
 

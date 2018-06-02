@@ -1,3 +1,4 @@
+import ec2_patching.config as config
 import boto3
 from botocore.exceptions import ClientError
 from operator import itemgetter
@@ -15,6 +16,16 @@ def get_ec2_regions(session):
     returns a list of available regions for the ec2 service
     """
     return session.get_available_regions('ec2')
+
+def get_default_ami(session):
+    """
+    Returns the latest Ubuntu Xenial ImageId
+    """
+    ami_name = config.ami_name
+    client = session.client('ec2')
+    amis = client.describe_images(Filters=[{ 'Name': 'name', 'Values': [ami_name] }])['Images']
+    ami = sorted(amis, key=itemgetter('Name'), reverse=True)[0]
+    return ami
 
 def filter_vpc_id(vpc_id):
     """
@@ -120,9 +131,9 @@ def get_first_public_subnet_id(session, vpc_id):
 
 def get_security_group_ids(session, vpc_id):
     """
-    Returns a list of security group ids
+    Returns a list of security group ids minus the bastion sg
     """
-    exclude_tag='aws-patching'
+    exclude_tag=config.cli_tag_key
     client = session.client('ec2')
     security_groups = client.describe_security_groups(**filter_vpc_id(vpc_id))['SecurityGroups']
     security_group_ids = [sg['GroupId'] for sg in security_groups if not get_tag_value(sg.get('Tags'), key=exclude_tag)]
@@ -190,6 +201,7 @@ def get_vpcs(session):
     for vpc in vpcs:
         in_use_enis = get_in_use_enis(session, vpc['VpcId'])
         subnets = client.describe_subnets(**filter_vpc_id(vpc['VpcId']))['Subnets']
+        #instances = client.describe_instances(**filter_vpc_id(vpc['VpcId']))['']
         vpc_tags = vpc.get('Tags', [])
 
         records.append(OrderedDict([

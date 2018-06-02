@@ -1,9 +1,10 @@
+from ec2_patching import __version__
 from distutils.core import setup
 from setuptools import setup, find_packages
 
 setup(
     name='ec2_patching',
-    version='0.1.0',
+    version=__version__,
     description='EC2 patching helpers',
     author='Gary Ellis',
     author_email='gellis@infiniticg.com',

@@ -2,6 +2,7 @@ from ec2_patching import aws
 from ec2_patching import keypairs
 from ec2_patching import cf_templates
 from ec2_patching import cf
+from ec2_patching import utils
 import logging
 import tabulate
 
@@ -21,20 +22,28 @@ def gen_bastion_template(name, ami_id, instance_type, key_name, vpc_id, bastion_
     """
     Sets up the bastion template parameters and returns the bastion cloudformation template
     """
-    logger.info('preparing template parameters')
 
     if not key_name:
         key_name = name
 
+    if not bastion_sg_ingress:
+        logger.info('an allow-ip address was not provided. resolving public ip')
+        bastion_sg_ingress = [utils.get_public_ip()]
+        logger.info('allow ip address {}'.format(bastion_sg_ingress))
+
     session = aws.get_session(profile_name=profile, region_name=region)
+
+    if not ami_id:
+        ami = aws.get_default_ami(session)
+        ami_id = ami['ImageId']
+        logger.info('using default ami: ami_id: {} name: {}'.format(ami_id, ami['Name']))
+
     public_subnet_id = aws.get_first_public_subnet_id(session, vpc_id)
     security_group_ids = aws.get_security_group_ids(session, vpc_id)
     
     logger.info('using vpc_id: {}, subnet_id: {}'.format(vpc_id, public_subnet_id))
-    logger.info('allow instance ip on security group ids: {}'.format(' '.join(security_group_ids)))
-
-    # add a template validation before returning template body
-    return cf_templates.create_bastion_template(
+    logger.info('adding bastion private ip security group ingress rules on: {}'.format(' '.join(security_group_ids)))
+    bastion_template = cf_templates.create_bastion_template(
         name=name,
         ami_id=ami_id,
         instance_type=instance_type,
@@ -44,6 +53,9 @@ def gen_bastion_template(name, ami_id, instance_type, key_name, vpc_id, bastion_
         bastion_sg_ingress=bastion_sg_ingress,
         sg_ids=security_group_ids
     )
+
+    cf.validate_template(session, bastion_template)
+    return bastion_template
 
 def create_bastion(name, ami_id, instance_type, key_name, ssh_public_key, vpc_id, bastion_sg_ingress, profile, region):
     """
@@ -64,7 +76,7 @@ def create_bastion(name, ami_id, instance_type, key_name, ssh_public_key, vpc_id
     cf.create_stack(
         session,
         name,
-        template
+        template,
     )
 
     stack_outputs = cf.get_stack_outputs(session, name)
@@ -83,6 +95,7 @@ def delete_bastion(delete_keypair, name, profile, region):
     logger.info('deleting the cloudformation stack {}'.format(name))
 
     # delete the stack if the stack was created by the cli
+    
     cf.delete_stack(
         session,
         name

@@ -60,11 +60,11 @@ def bastion_group():
     """
 
 @bastion_group.command(name='gen-template')
-@click.option('--allow-ip', help='the bastion ingress ip address')
-@click.option('--ami-id', help='deploy the basiton using the given ami id')
-@click.option('--instance-type', default='t2.micro', help='the bastion instance type')
+@click.option('--allow-ip', multiple=True, help='A list of CIDRs allowed by the bastion security group.')
+@click.option('--ami-id', help='Defaults to latest Ubuntu xenial marketplace image.')
+@click.option('--instance-type', default='t2.micro', help='the bastion instance type.')
 @click.option('--key-name', help='the bastion instance key name')
-@click.option('--name', help='the name of the bastion related resources')
+@click.option('--name', required=True, help='the name of the bastion related resources')
 @click.option('--vpc-id',required=True)
 @pass_opts
 def gen_template(opts, allow_ip, ami_id, instance_type, key_name, name, vpc_id):
@@ -85,11 +85,11 @@ def gen_template(opts, allow_ip, ami_id, instance_type, key_name, name, vpc_id):
     print bastion_template
 
 @bastion_group.command(name='create')
-@click.option('--allow-ip', help='the bastion ingress ip address')
-@click.option('--ami-id', help='deploy the basiton using the given ami id')
-@click.option('--instance-type', default='t2.micro', help='the bastion instance type')
+@click.option('--allow-ip', multiple=True, help='A list of CIDRs allowed by the bastion security group.')
+@click.option('--ami-id', help='Defaults to latest Ubuntu xenial marketplace image.')
+@click.option('--instance-type', default='t2.micro', help='The bastion instance type.')
 @click.option('--key-name', help='the bastion instance key name',default=None)
-@click.option('--name', help='the name of the bastion related resources')
+@click.option('--name', required=True, help='the name of the bastion related resources')
 @click.option('--ssh-public-key', help='import the ssh key', default=None)
 @click.option('--vpc-id',required=True)
 @pass_opts
@@ -111,7 +111,7 @@ def create_stack(opts, allow_ip, ami_id, instance_type, key_name, name, ssh_publ
 
 @bastion_group.command(name='delete')
 @click.option('--delete-keypair/--no-delete-keypair', default=False, help='delete the imported bastion keypair')
-@click.option('--name', help='the name of the bastion cloudformation stack')
+@click.option('--name', required=True, help='the name of the bastion cloudformation stack')
 @pass_opts
 def delete_stack(opts, delete_keypair, name):
     """

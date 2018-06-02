@@ -28,10 +28,9 @@ def sanitize_resource_name(name):
 
 def tags(name):
     """
-    Returns a tags resource
+    Returns a tags resource containing Name tag 
     """
-    # place these into a config outside of template rendering
-    return Tags({ 'aws-patching': 'true', 'Name': name})
+    return Tags({'Name': name})
 
 def ec2_instance(name, ami_id, keyname, instance_type, sg_ids, subnet_id):
     """
@@ -49,8 +48,6 @@ def ec2_instance(name, ami_id, keyname, instance_type, sg_ids, subnet_id):
         GroupSet=sg_ids,
         SubnetId=subnet_id,
       )],
-      #SecurityGroupIds=sg_ids,
-      #SubnetId=subnet_id,
       Tags=tags(name)
     )
 
