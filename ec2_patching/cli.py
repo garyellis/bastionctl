@@ -1,5 +1,5 @@
 import ec2_patching.commands
-import ec2_patching.helpers
+import ec2_patching.utils
 import click
 
 
@@ -31,7 +31,7 @@ pass_opts = click.make_pass_decorator(Opts, ensure=True)
 def cli(opts, log_level, profile, region):
     """
     """
-    logger = ec2_patching.helpers.setup_logging(log_level)
+    logger = ec2_patching.utils.setup_logging(log_level)
     logger.debug('log level: {}'.format(log_level))
     opts.profile = profile
     opts.region = region
@@ -122,6 +122,32 @@ def delete_stack(opts, delete_keypair, name):
         name=name,
         profile=opts.profile,
         region=opts.region
+    )
+
+@bastion_group.command(name='list')
+@pass_opts
+def list_stacks(opts):
+    """
+    List bastion cloudformation stack resources
+    """
+    ec2_patching.commands.list_bastion(
+        profile=opts.profile,
+        region=opts.region,
+    )
+
+@bastion_group.command(name='ssh')
+@click.option('--name', help='the name of the bastion cloudformation stack')
+@click.option('--user', default='ubuntu', help='the bastion ssh user')
+@pass_opts
+def list_stacks(opts, name, user):
+    """
+    List bastion cloudformation stack resources
+    """
+    ec2_patching.commands.ssh(
+        profile=opts.profile,
+        region=opts.region,
+        name=name,
+        user=user
     )
 
 cli.add_command(bastion_group)

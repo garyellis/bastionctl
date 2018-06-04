@@ -110,7 +110,6 @@ def wait_for_completion(session, stack_name):
         time.sleep(4)
     return status
 
-
 def create_stack(session, stack_name, template_body):
     """
     Creates the cloudformation stack
@@ -160,15 +159,6 @@ def delete_stack(session, stack_name):
 
     logger.info('delete stack complete.')
 
-def get_stack_outputs(session, name):
-    """
-    Returns the outputs for the given cloudformation stack
-    """
-    client = session.client('cloudformation')
-    stack_outputs = client.describe_stacks(StackName=name)['Stacks']
-    if stack_outputs:
-        return stack_outputs[0]['Outputs']
-
 def validate_template(session, template_body):
     """
     Validates the cloudformation template
@@ -183,3 +173,92 @@ def validate_template(session, template_body):
 
     logger.info('validate template done')
 
+def get_stack_outputs(session, name):
+    """
+    Returns the outputs for the given cloudformation stack
+    """
+    client = session.client('cloudformation')
+    stack_outputs = client.describe_stacks(StackName=name)['Stacks']
+    if stack_outputs:
+        return stack_outputs[0]['Outputs']
+
+def get_stack_output_value(outputs, output_key):
+    """
+    """
+    value = [i['OutputValue'] for i in outputs if i['OutputKey'] == output_key]
+    if value:
+        return value[0]
+
+def get_stacks(session):
+    """
+    Returns stacks created by this cli
+    """
+    tag_key = config.cli_tag_key
+    tag_value = config.cli_tag_value
+    stacks = []
+    client = session.client('cloudformation')
+    all_stacks = client.describe_stacks()['Stacks']
+    for stack in all_stacks:
+        tags = stack.get('Tags')
+        if tags:
+            for tag in tags:
+                if tag['Key'] == tag_key and tag['Value'] == tag_value:
+                    stacks.append(stack)
+    return stacks
+
+def get_stack_resources(session, name):
+    """
+    Returns the stack resources
+    """
+    client = session.client('cloudformation')
+    stack_resources = client.list_stack_resources(StackName=name)['StackResourceSummaries']
+    return stack_resources
+
+def summarize_stack(session, name, stack_resources):
+    """
+    """
+    client = session.client('cloudformation')
+    stack_creation_time = client.describe_stacks(StackName=name)['Stacks'][0]['CreationTime']
+
+    instance_type = 'AWS::EC2::Instance'
+    sg_type = 'AWS::EC2::SecurityGroup'
+    sg_ingress_type = 'AWS::EC2::SecurityGroupIngress'
+
+    instance_id = [r['PhysicalResourceId'] for r in stack_resources if r['ResourceType'] == instance_type][0]
+    sg_id = [r['PhysicalResourceId'] for r in stack_resources if r['ResourceType'] == sg_type][0]
+    sg_ingress = [r['PhysicalResourceId'] for r in stack_resources if r['ResourceType'] == sg_ingress_type]
+
+    private_ip_key = config.stack_output_private_ip_key
+    public_ip_key = config.stack_output_public_ip_key
+    vpc_id_key = config.stack_output_vpc_id_key
+
+    stack_outputs = get_stack_outputs(session, name)
+    public_ip = get_stack_output_value(stack_outputs, public_ip_key)
+    private_ip = get_stack_output_value(stack_outputs, private_ip_key)
+    vpc_id = get_stack_output_value(stack_outputs, vpc_id_key)
+
+    summary = {
+        'name': name,
+        'instance_id': instance_id,
+        'public_ip': public_ip,
+        'private_ip': private_ip,
+        'sg_id': sg_id,
+        'sg_ingress_rules': len(sg_ingress),
+        'stack_creation_time': stack_creation_time,
+        'vpc_id': vpc_id
+    }
+
+    return summary
+
+def get_stack_summaries(session):
+    """
+    """
+    stack_summaries = []
+    stacks = get_stacks(session)
+    for stack in stacks:
+        stack_name = stack['StackName']
+        stack_resources = get_stack_resources(session, stack_name)
+        stack_summary = summarize_stack(session, stack_name, stack_resources)
+        stack_summaries.append(stack_summary)
+
+    return stack_summaries

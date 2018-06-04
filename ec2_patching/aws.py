@@ -191,6 +191,29 @@ def count_private_enis(enis):
     private_enis = [eni for eni in enis if not eni.get('Association')]
     return len(private_enis)
 
+def has_natgw(session, vpc_id):
+    """
+    Returns true if a nat gw is associated to the vpc
+    """
+    has_nat_gateway = False
+    client = session.client('ec2')
+    nat_gateways = client.describe_nat_gateways(**filter_vpc_id(vpc_id))['NatGateways']
+    if nat_gateways:
+        has_nat_gateway = True
+    return has_nat_gateway
+
+def has_igw(session, vpc_id):
+    """
+    Returns true if an igw is attached to the vpc
+    """
+    has_igw = False
+    igw_filter = {'Filters': [{'Name': 'attachment.vpc-id', 'Values': [vpc_id]}]}
+    client = session.client('ec2')
+    igw = client.describe_internet_gateways(**igw_filter)['InternetGateways']
+    if igw:
+        has_igw = True
+    return has_igw
+
 def get_vpcs(session):
     """
     Returns a list of vpcs information
@@ -209,8 +232,8 @@ def get_vpcs(session):
             ('tag_name', get_tag_value(vpc_tags)),
             ('cidr', vpc['CidrBlock']),
             ('default_vpc', vpc['IsDefault']),
-            ('has_natgw', False),
-            ('has_igw', False),
+            ('has_natgw', has_natgw(session, vpc['VpcId'])),
+            ('has_igw', has_igw(session, vpc['VpcId'])),
             ('enis_prv', count_private_enis(in_use_enis)),
             ('enis_pub', count_public_enis(in_use_enis)),
             ('eni_eips', count_eip_enis(in_use_enis)),

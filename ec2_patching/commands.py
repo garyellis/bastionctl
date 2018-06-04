@@ -1,3 +1,4 @@
+import ec2_patching.config as config
 from ec2_patching import aws
 from ec2_patching import keypairs
 from ec2_patching import cf_templates
@@ -5,6 +6,7 @@ from ec2_patching import cf
 from ec2_patching import utils
 import logging
 import tabulate
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -101,10 +103,23 @@ def delete_bastion(delete_keypair, name, profile, region):
         name
     )
 
-def ssh(name, profile, region):
+def list_bastion(profile, region):
+    """
+    lists deployed bastion stacks
+    """
+    session = aws.get_session(profile_name=profile, region_name=region)
+    bastion_stacks = cf.get_stack_summaries(session)
+
+    print tabulate.tabulate(bastion_stacks, headers='keys')
+
+
+def ssh(profile, region, name, user):
     """
     ssh into the bastion instance
     """
     session = aws.get_session(profile_name=profile, region_name=region)
+
+    stack_output_pub_ip_key = config.stack_output_public_ip_key
     stack_outputs = cf.get_stack_outputs(session, name)
-    #os.system('ssh -tt -A ubuntu@34.219.250.189')
+    public_ip = cf.get_stack_output_value(stack_outputs, stack_output_pub_ip_key)
+    os.system('ssh -tt -A {}@{}'.format(user, public_ip))
