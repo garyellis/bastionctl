@@ -51,9 +51,8 @@ bastion commands::
     create        Creates the bastion cloudformation stack
     delete        Deletes the bastion cloudformation stack
     gen-template  Generates the bastion cloudformation template
-    list          List bastion cloudformation stack resources
-    ssh           List bastion cloudformation stack resources
-
+    list          List bastions
+    ssh           ssh into the bastion instance
 
 vpc commands::
   
@@ -73,12 +72,8 @@ Examples
 
 Generate the bastion cloudformation template::
 
-  $ profile=${profile:-ccctc-infiniti-sandbox}
-  $ vpc_id=${vpc_id:-vpc-56b3952f}
-  $ ec2-patching --region us-west-2 --profile $profile bastion gen-template \
-        --name bastion \
-        --key-name bastion \
-        --vpc-id $vpc_id
+  $ ec2-patching --region us-west-2 --profile -ccctc-infiniti-sandbox  bastion gen-template --name bastion --key-name bastion --vpc-id -vpc-56b3952f
+
 
 Create the bastion::
 

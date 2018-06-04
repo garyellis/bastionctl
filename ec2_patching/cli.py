@@ -128,7 +128,7 @@ def delete_stack(opts, delete_keypair, name):
 @pass_opts
 def list_stacks(opts):
     """
-    List bastion cloudformation stack resources
+    List bastions
     """
     ec2_patching.commands.list_bastion(
         profile=opts.profile,
@@ -141,7 +141,7 @@ def list_stacks(opts):
 @pass_opts
 def list_stacks(opts, name, user):
     """
-    List bastion cloudformation stack resources
+    ssh into the bastion instance
     """
     ec2_patching.commands.ssh(
         profile=opts.profile,
