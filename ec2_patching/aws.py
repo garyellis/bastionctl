@@ -3,6 +3,9 @@ import boto3
 from botocore.exceptions import ClientError
 from operator import itemgetter
 from collections import OrderedDict
+import logging
+
+logger = logging.getLogger(__name__)
 
 def get_session(profile_name,region_name='us-west-2'):
     """
@@ -224,7 +227,6 @@ def get_vpcs(session):
     for vpc in vpcs:
         in_use_enis = get_in_use_enis(session, vpc['VpcId'])
         subnets = client.describe_subnets(**filter_vpc_id(vpc['VpcId']))['Subnets']
-        #instances = client.describe_instances(**filter_vpc_id(vpc['VpcId']))['']
         vpc_tags = vpc.get('Tags', [])
 
         records.append(OrderedDict([
@@ -241,6 +243,32 @@ def get_vpcs(session):
             ('sgs_total', len(get_security_group_ids(session, vpc['VpcId']))),
             ('subnets_pub', len(get_public_subnet_ids(session, vpc['VpcId']))),
             ('subnets_total', len(subnets)),
-            ('tags', '')
         ]))
+    return records
+
+import ec2_patching.keypairs
+
+@ec2_patching.keypairs.add_ssh_keys_fingerprints
+def get_vpc_instances(session, vpc_id, path=None):
+    """
+    """
+    client = session.client('ec2')
+    reservations = client.describe_instances()['Reservations']
+    instances = [
+        instance for reservation in reservations
+        for instance in reservation['Instances']
+    ]
+
+    records = []
+    for instance in instances:
+        logger.debug('instance: {}'.format(instance))
+        records.append(OrderedDict([
+            ('vpc_id', instance['VpcId']),
+            ('instance_id', instance['InstanceId']),
+            ('tag_name', get_tag_value(instance['Tags'])),
+            ('private_ip', instance['PrivateIpAddress']),
+            ('key_pair', instance.get('KeyName', '')),
+            ('launch_time', instance['LaunchTime'])
+        ]))
+    logger.debug(records)
     return records

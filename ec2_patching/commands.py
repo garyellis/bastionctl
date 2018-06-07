@@ -10,6 +10,16 @@ import os
 
 logger = logging.getLogger(__name__)
 
+
+# instances group commands
+def instances_list(profile, region, vpc_id, ssh_keys_path):
+    """
+    List instances
+    """
+    session = aws.get_session(profile_name=profile, region_name=region)
+    instances = aws.get_vpc_instances(session=session, vpc_id=vpc_id, path=ssh_keys_path)
+    print tabulate.tabulate(instances, headers='keys')
+
 # vpc group commands
 def vpc_list(profile, region):
     """

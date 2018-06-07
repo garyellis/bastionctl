@@ -2,8 +2,6 @@ import ec2_patching.commands
 import ec2_patching.utils
 import click
 
-
-
 class Opts(object):
     def __init(self):
         self.profile = None
@@ -36,6 +34,23 @@ def cli(opts, log_level, profile, region):
     opts.profile = profile
     opts.region = region
 
+
+@click.group(name='instances')
+def instances_group():
+    """
+    Commands for viewing and exporting instances resources
+    """
+
+@instances_group.command(name='list')
+@click.option('--vpc-id', help='filter vpcs by vpc id')
+@click.option('--name', help='filter vpcs by associated bastion')
+@click.option('--ssh-keys-path', help='ssh keys path')
+@pass_opts
+def instances_list(opts, name, vpc_id, ssh_keys_path):
+    """
+    List instances
+    """
+    ec2_patching.commands.instances_list(opts.profile, opts.region, vpc_id, ssh_keys_path)
 
 @click.group(name='vpc')
 def vpc_group():
@@ -150,5 +165,6 @@ def list_stacks(opts, name, user):
         user=user
     )
 
+cli.add_command(instances_group)
 cli.add_command(bastion_group)
 cli.add_command(vpc_group)
