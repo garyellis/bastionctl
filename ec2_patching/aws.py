@@ -263,12 +263,12 @@ def get_vpc_instances(session, vpc_id, path=None):
     for instance in instances:
         logger.debug('instance: {}'.format(instance))
         records.append(OrderedDict([
-            ('vpc_id', instance['VpcId']),
+            #('launch_time', instance['LaunchTime']),
+            ('vpc_id', instance.get('VpcId')),
             ('instance_id', instance['InstanceId']),
-            ('tag_name', get_tag_value(instance['Tags'])),
-            ('private_ip', instance['PrivateIpAddress']),
+            ('tag_name', get_tag_value(instance.get('Tags'))),
+            ('private_ip', instance.get('PrivateIpAddress')),
             ('key_pair', instance.get('KeyName', '')),
-            ('launch_time', instance['LaunchTime'])
         ]))
     logger.debug(records)
     return records

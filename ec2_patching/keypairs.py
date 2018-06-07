@@ -82,7 +82,7 @@ def get_key(private_key_file):
             if _key.has_private():
                 key = _key
         except Exception as err:
-            logger.error('{}: is not an rsa private key'.format(private_key_file, err))
+            logger.debug('{}: is not an rsa private key'.format(private_key_file, err))
     return key
 
 def get_key_fingerprints(private_key_file):
@@ -97,7 +97,7 @@ def get_key_fingerprints(private_key_file):
             'private_key_file_public_md5_fingerprint': get_pub_key_md5_fingerprint(private_key)
         }
     except Exception as err:
-        logger.error('{}: {}'.format(private_key_file, err))
+        logger.debug('{}: {}'.format(private_key_file, err))
     return key
 
 def get_ssh_keys_fingerprints(path):
@@ -129,9 +129,9 @@ def add_ssh_keys_fingerprints(f):
                 ]
                 if ssh_key_fingerprint:
                     records[i]['private_key_file'] = ssh_key_fingerprint[0]['private_key_file']
-                    records[i]['keypair_fingerprint'] = keypair_fingerprint
+                    #records[i]['keypair_fingerprint'] = keypair_fingerprint
                     #records[i]['private_key_file_private_sha1_fingerprint'] = ssh_key_fingerprint[0]['private_key_file_private_sha1_fingerprint']
                     #records[i]['private_key_file_public_md5_fingerprint'] = ssh_key_fingerprint[0]['private_key_file_public_md5_fingerprint']
-                    logger.info('Found matching ssh key! {}'.format(records[i]))
+                    logger.debug('Found matching ssh key! {}'.format(records[i]))
         return records
     return wrapped
