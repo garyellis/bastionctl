@@ -13,12 +13,12 @@ logger = logging.getLogger(__name__)
 
 
 # instances group commands
-def instances_list(profile, region, vpc_id, ssh_keys_path):
+def instances_list(profile, region, vpc_id, ssh_keys_path, detailed):
     """
     List instances
     """
     session = aws.get_session(profile_name=profile, region_name=region)
-    instances = aws.get_vpc_instances(session=session, vpc_id=vpc_id, path=ssh_keys_path)
+    instances = aws.get_vpc_instances(session=session, vpc_id=vpc_id, path=ssh_keys_path, detailed=detailed)
     print tabulate.tabulate(instances, headers='keys')
 
 def instances_gen_ansible_inventory(profile, region, vpc_id, name, ssh_keys_path):
@@ -28,7 +28,7 @@ def instances_gen_ansible_inventory(profile, region, vpc_id, name, ssh_keys_path
     session = aws.get_session(profile_name=profile, region_name=region)
     bastion_stacks = cf.get_stack_summaries(session)
     bastion = [bastion for bastion in bastion_stacks if bastion.get('name') == name]
-    instances = aws.get_vpc_instances(session=session, vpc_id=vpc_id, path=ssh_keys_path)
+    instances = aws.get_vpc_instances(session=session, vpc_id=vpc_id, path=ssh_keys_path, detailed=True, bastion_name=name)
 
     inventory_filename = 'inventory-{}-{}-{}.yaml'.format(profile, region, name)
     inventory = ansible_inventory.to_inventory(instances)

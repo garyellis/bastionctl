@@ -48,14 +48,11 @@ def resolve_ansible_python_interpreter(ami_name):
            ansible_python_interpreter = python_interpreter
     return ansible_python_interpreter
 
-@ec2_patching.outputs.decorators.add_bastion_flag
+@ec2_patching.outputs.decorators.setup_bastion_inventory
 def create_host_inventory_item(record):
     """
     Configures the ansible inventory item
     """
-    # ami_user and ansible_python_interpreter are commented until we setup a 'clean' way to
-    # fetch the ami id. this is a result of field selectivity in the ec2 client module 'aws'
-
 
     log.info('create ansible inventory item for {}'.format(record['instance_id']))
     inventory_host_vars = {}
@@ -77,15 +74,12 @@ def create_host_inventory_item(record):
     if record.get('private_key_file'):
         inventory_host_vars['ansible_ssh_private_key_file'] = record['private_key_file']
 
-    # determine the ssh user based on the ami name.
-    # we should setup a toggle switch for this
-    #ansible_user = resolve_ansible_user(record['ami_name'])
-    #inventory_host_vars['ansible_user'] = ansible_user
-    inventory_host_vars['ansible_user'] = 'ubuntu'
+    # determine the ssh user based on the ami name. this should be made optional
+    ansible_user = resolve_ansible_user(record['ami_name'])
+    inventory_host_vars['ansible_user'] = ansible_user
 
     # override the ansible interpreter when applicable. i.e. python3
-    #ansible_python_interpreter = resolve_ansible_python_interpreter(record['ami_name'])
-    ansible_python_interpreter = resolve_ansible_python_interpreter('xenial')
+    ansible_python_interpreter = resolve_ansible_python_interpreter(record['ami_name'])
     if ansible_python_interpreter:
         inventory_host_vars['ansible_python_interpreter'] = ansible_python_interpreter
 
@@ -103,7 +97,7 @@ def to_inventory(records):
         }
     }
     for i in records:
-        ansible_host = create_host_inventory_item(i)
+        ansible_host = create_host_inventory_item(record=i)
         inventory['all']['hosts'].update(ansible_host)
 
     return inventory

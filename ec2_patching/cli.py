@@ -47,12 +47,13 @@ def instances_group():
 @click.option('--vpc-id', help='filter vpcs by vpc id')
 @click.option('--name', help='filter vpcs by associated bastion')
 @click.option('--ssh-keys-path', help='ssh keys path')
+@click.option('--detailed/--no-detailed', default=False, help='output detailed instances info')
 @pass_opts
-def instances_list(opts, name, vpc_id, ssh_keys_path):
+def instances_list(opts, name, vpc_id, ssh_keys_path, detailed):
     """
     List instances
     """
-    ec2_patching.commands.instances_list(opts.profile, opts.region, vpc_id, ssh_keys_path)
+    ec2_patching.commands.instances_list(opts.profile, opts.region, vpc_id, ssh_keys_path, detailed)
 
 
 @instances_group.command(name='gen-ansible-inventory')
