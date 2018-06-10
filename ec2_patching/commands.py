@@ -4,6 +4,7 @@ from ec2_patching import keypairs
 from ec2_patching import cf_templates
 from ec2_patching import cf
 from ec2_patching import utils
+import ec2_patching.outputs.ansible_inventory as ansible_inventory
 import logging
 import tabulate
 import os
@@ -19,6 +20,20 @@ def instances_list(profile, region, vpc_id, ssh_keys_path):
     session = aws.get_session(profile_name=profile, region_name=region)
     instances = aws.get_vpc_instances(session=session, vpc_id=vpc_id, path=ssh_keys_path)
     print tabulate.tabulate(instances, headers='keys')
+
+def instances_gen_ansible_inventory(profile, region, vpc_id, name, ssh_keys_path):
+    """
+    Generates an ansible inventory file.
+    """
+    session = aws.get_session(profile_name=profile, region_name=region)
+    bastion_stacks = cf.get_stack_summaries(session)
+    bastion = [bastion for bastion in bastion_stacks if bastion.get('name') == name]
+    instances = aws.get_vpc_instances(session=session, vpc_id=vpc_id, path=ssh_keys_path)
+
+    inventory_filename = 'inventory-{}-{}-{}.yaml'.format(profile, region, name)
+    inventory = ansible_inventory.to_inventory(instances)
+    print ansible_inventory.to_yaml(inventory, inventory_filename)
+
 
 # vpc group commands
 def vpc_list(profile, region):

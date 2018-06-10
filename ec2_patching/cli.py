@@ -1,3 +1,4 @@
+import ec2_patching.config as config
 import ec2_patching.commands
 import ec2_patching.utils
 import click
@@ -33,7 +34,8 @@ def cli(opts, log_level, profile, region):
     logger.debug('log level: {}'.format(log_level))
     opts.profile = profile
     opts.region = region
-
+    # set state in config module
+    config.opts = opts
 
 @click.group(name='instances')
 def instances_group():
@@ -51,6 +53,19 @@ def instances_list(opts, name, vpc_id, ssh_keys_path):
     List instances
     """
     ec2_patching.commands.instances_list(opts.profile, opts.region, vpc_id, ssh_keys_path)
+
+
+@instances_group.command(name='gen-ansible-inventory')
+@click.option('--vpc-id', help='filter vpcs by vpc id')
+@click.option('--name', help='filter vpcs by associated bastion')
+@click.option('--ssh-keys-path', help='ssh keys path')
+@pass_opts
+def instances_gen_ansible_inventory(opts, name, vpc_id, ssh_keys_path):
+    """
+    Generate an ansible inventory file
+    """
+    ec2_patching.commands.instances_gen_ansible_inventory(opts.profile, opts.region, vpc_id, name, ssh_keys_path)
+
 
 @click.group(name='vpc')
 def vpc_group():

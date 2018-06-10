@@ -1,4 +1,5 @@
 import ec2_patching.config as config
+import ec2_patching.keypairs
 import boto3
 from botocore.exceptions import ClientError
 from operator import itemgetter
@@ -246,10 +247,7 @@ def get_vpcs(session):
         ]))
     return records
 
-import ec2_patching.keypairs
-
-@ec2_patching.keypairs.add_ssh_keys_fingerprints
-def get_vpc_instances(session, vpc_id, path=None):
+def get_instances(session):
     """
     """
     client = session.client('ec2')
@@ -258,6 +256,14 @@ def get_vpc_instances(session, vpc_id, path=None):
         instance for reservation in reservations
         for instance in reservation['Instances']
     ]
+    return instances
+
+@ec2_patching.keypairs.add_ssh_keys_fingerprints
+def get_vpc_instances(session, vpc_id, path=None):
+    """
+    """
+    client = session.client('ec2')
+    instances = get_instances(session)
 
     records = []
     for instance in instances:
