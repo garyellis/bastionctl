@@ -1,6 +1,7 @@
 import logging
 import logging.config
 import requests
+import yaml
 
 logger = logging.getLogger(__name__)
 
@@ -33,3 +34,10 @@ def get_public_ip():
     if ip:
         ip_cidr = '{}/32'.format(ip)
         return ip_cidr
+
+def to_yaml(items, filename):
+    """
+    """
+    logger.info('writing ansible inventory to {}'.format(filename))
+    with open( filename, 'w') as s:
+        yaml.safe_dump(items, s, default_flow_style=False, encoding='utf-8', allow_unicode=True)

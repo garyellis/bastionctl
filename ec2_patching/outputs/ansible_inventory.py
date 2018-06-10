@@ -1,9 +1,9 @@
-import ec2_patching.outputs.decorators
+import ec2_patching.config as config
+from functools import wraps
 import logging
 import re
-import yaml
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 def sanitize_name(name):
     """
@@ -29,7 +29,7 @@ def resolve_ansible_user(ami_name):
     for user, pattern in ami_users.iteritems():
         match = re.search(r'{}'.format(pattern), ami_name, re.IGNORECASE)
         if match:
-            log.info('matched {} in {}'.format(pattern, pattern))
+            logger.info('matched {} in {}'.format(pattern, pattern))
             ansible_user = user
 
     return ansible_user
@@ -44,17 +44,55 @@ def resolve_ansible_python_interpreter(ami_name):
     for python_interpreter, pattern in python_interpreters.iteritems():
        match = re.search(pattern, ami_name, re.IGNORECASE)
        if match:
-           log.info('ansible_python_interpreter matched {} in {}'.format(pattern, ami_name))
+           logger.info('ansible_python_interpreter matched {} in {}'.format(pattern, ami_name))
            ansible_python_interpreter = python_interpreter
     return ansible_python_interpreter
 
-@ec2_patching.outputs.decorators.setup_bastion_inventory
+
+def setup_bastion_inventory(f):
+  @wraps(f)
+  def wrapped(*args, **kwargs):
+      record = kwargs.get('record')
+
+      inventory_item = f(*args, **kwargs)
+      name = inventory_item.keys()[0]
+      inventory_instance_id = inventory_item[name]['instance_id']
+
+      if record.get('bastion'):
+          logger.info('found bastion. configuring public ip...')
+          inventory_item[name].update({ 'ansible_host': record.get('public_ip'), config.cli_tag_key: config.cli_tag_value})
+          logger.info('bastion: {}'.format(inventory_item))
+
+      return inventory_item
+  return wrapped
+
+def add_ssh_proxy(f):
+  @wraps(f)
+  def wrapped(*args, **kwargs):
+    records = kwargs.get('records')
+    inventory = f(*args, **kwargs)
+
+    bastion = {k:v for k,v in inventory['all']['hosts'].items() if v.get(config.cli_tag_key)}
+    bastion = bastion.itervalues().next()
+
+    logger.info('adding proxy: {}'.format(bastion))
+    for inventory_name in inventory['all']['hosts'].keys():
+        logger.info('working on: {}'.format(inventory_name))
+        if bastion and not inventory['all']['hosts'][inventory_name].get(config.cli_tag_key):
+          ansible_ssh_common_args = "-o ProxyCommand=\"ssh -A -W %h:%p -q {}@{}\"".format(bastion['ansible_user'], bastion['ansible_host'])
+          logger.info('ansible_ssh_args: {}'.format(ansible_ssh_common_args))
+          inventory['all']['hosts'][inventory_name].update({'ansible_ssh_common_args': ansible_ssh_common_args})
+
+    return inventory
+  return wrapped
+
+@setup_bastion_inventory
 def create_host_inventory_item(record):
     """
     Configures the ansible inventory item
     """
 
-    log.info('create ansible inventory item for {}'.format(record['instance_id']))
+    logger.info('create ansible inventory item for {}'.format(record['instance_id']))
     inventory_host_vars = {}
     inventory_item_key = ''
 
@@ -83,14 +121,14 @@ def create_host_inventory_item(record):
     if ansible_python_interpreter:
         inventory_host_vars['ansible_python_interpreter'] = ansible_python_interpreter
 
-    log.info('created inventory item: {}'.format({ inventory_item_key : inventory_host_vars }))
+    logger.info('created inventory item: {}'.format({ inventory_item_key : inventory_host_vars }))
     return { inventory_item_key : inventory_host_vars }
 
-@ec2_patching.outputs.decorators.add_ssh_proxy
+@add_ssh_proxy
 def to_inventory(records):
     """
     """
-    log.info('configuring instances records to ansible_inventory')
+    logger.info('configuring instances records to ansible_inventory')
     inventory = {
         'all': {
           'hosts': {}
@@ -101,11 +139,3 @@ def to_inventory(records):
         inventory['all']['hosts'].update(ansible_host)
 
     return inventory
-
-def to_yaml(items, filename):
-    """
-    """
-    log.info('writing ansible inventory to {}'.format(filename))
-    with open( filename, 'w') as s:
-        yaml.safe_dump(items, s, default_flow_style=False, encoding='utf-8', allow_unicode=True)
-
