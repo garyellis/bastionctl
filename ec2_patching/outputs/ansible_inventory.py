@@ -73,6 +73,10 @@ def add_ssh_proxy(f):
     inventory = f(*args, **kwargs)
 
     bastion = {k:v for k,v in inventory['all']['hosts'].items() if v.get(config.cli_tag_key)}
+    if not bastion:
+        logger.info('bastion instance not found')
+        return inventory
+
     bastion = bastion.itervalues().next()
 
     logger.info('adding proxy: {}'.format(bastion))

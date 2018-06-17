@@ -15,6 +15,8 @@ setup(
     install_requires=[
       'boto3',
       'click',
+      'requests',
+      'pycrypto',
       'tabulate',
       'troposphere'
     ]

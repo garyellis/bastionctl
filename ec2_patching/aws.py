@@ -283,6 +283,8 @@ def get_vpc_instances(session, vpc_id, path=None, detailed=False, bastion_name=N
     """
     client = session.client('ec2')
     instances = get_instances(session)
+    if vpc_id:
+        instances = [instance for instance in instances if instance.get('VpcId') == vpc_id]
 
     records = []
     for instance in instances:
