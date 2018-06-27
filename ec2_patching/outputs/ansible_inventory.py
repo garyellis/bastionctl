@@ -70,9 +70,10 @@ def add_ssh_proxy(f):
   @wraps(f)
   def wrapped(*args, **kwargs):
     records = kwargs.get('records')
+    group_name = kwargs.get('group_name')
     inventory = f(*args, **kwargs)
 
-    bastion = {k:v for k,v in inventory['all']['hosts'].items() if v.get(config.cli_tag_key)}
+    bastion = {k:v for k,v in inventory['all']['children'][group_name]['hosts'].items() if v.get(config.cli_tag_key)}
     if not bastion:
         logger.info('bastion instance not found')
         return inventory
@@ -80,12 +81,12 @@ def add_ssh_proxy(f):
     bastion = bastion.itervalues().next()
 
     logger.info('adding proxy: {}'.format(bastion))
-    for inventory_name in inventory['all']['hosts'].keys():
+    for inventory_name in inventory['all']['children'][group_name]['hosts'].keys():
         logger.info('working on: {}'.format(inventory_name))
-        if bastion and not inventory['all']['hosts'][inventory_name].get(config.cli_tag_key):
+        if bastion and not inventory['all']['children'][group_name]['hosts'][inventory_name].get(config.cli_tag_key):
           ansible_ssh_common_args = "-o ProxyCommand=\"ssh -A -W %h:%p -q {}@{}\"".format(bastion['ansible_user'], bastion['ansible_host'])
           logger.info('ansible_ssh_args: {}'.format(ansible_ssh_common_args))
-          inventory['all']['hosts'][inventory_name].update({'ansible_ssh_common_args': ansible_ssh_common_args})
+          inventory['all']['children'][group_name]['hosts'][inventory_name].update({'ansible_ssh_common_args': ansible_ssh_common_args})
 
     return inventory
   return wrapped
@@ -129,17 +130,21 @@ def create_host_inventory_item(record):
     return { inventory_item_key : inventory_host_vars }
 
 @add_ssh_proxy
-def to_inventory(records):
+def to_inventory(records, group_name):
     """
     """
     logger.info('configuring instances records to ansible_inventory')
     inventory = {
         'all': {
-          'hosts': {}
+          'children': {
+            group_name: {
+              'hosts': {}
+            }
+          }
         }
     }
     for i in records:
         ansible_host = create_host_inventory_item(record=i)
-        inventory['all']['hosts'].update(ansible_host)
+        inventory['all']['children'][group_name]['hosts'].update(ansible_host)
 
     return inventory

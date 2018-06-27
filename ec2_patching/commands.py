@@ -4,6 +4,7 @@ from ec2_patching import keypairs
 from ec2_patching import cf_templates
 from ec2_patching import cf
 from ec2_patching import utils
+import ec2_patching.outputs as outputs
 import ec2_patching.outputs.ansible_inventory as ansible_inventory
 import logging
 import tabulate
@@ -17,8 +18,15 @@ def instances_list(profile, region, vpc_id, ssh_keys_path, detailed):
     """
     List instances
     """
+    # add autoscaling group and lc
+    # add cloudformation stack
+    # add load balancers
     session = aws.get_session(profile_name=profile, region_name=region)
     instances = aws.get_vpc_instances(session=session, vpc_id=vpc_id, path=ssh_keys_path, detailed=detailed)
+    outputs.to_csv(
+        content=instances,
+        filename='instances-list-{}-{}.csv'.format(profile, region)
+    )
     print tabulate.tabulate(instances, headers='keys')
 
 def instances_gen_ansible_inventory(profile, region, vpc_id, name, ssh_keys_path):
@@ -30,7 +38,7 @@ def instances_gen_ansible_inventory(profile, region, vpc_id, name, ssh_keys_path
     instances = aws.get_vpc_instances(session=session, vpc_id=vpc_id, path=ssh_keys_path, detailed=True, bastion_name=name)
 
     inventory_filename = 'inventory-{}-{}-{}.yaml'.format(profile, region, name)
-    inventory = ansible_inventory.to_inventory(instances)
+    inventory = ansible_inventory.to_inventory(records=instances, group_name=name)
     utils.to_yaml(inventory, inventory_filename)
 
 
