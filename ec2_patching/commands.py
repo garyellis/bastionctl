@@ -144,6 +144,29 @@ def list_bastion(profile, region):
 
     print tabulate.tabulate(bastion_stacks, headers='keys')
 
+def stop_bastion(profile, region, name):
+    """
+    Start a bastion ec2 instance
+    """
+    session = aws.get_session(profile_name=profile, region_name=region)
+    logger.info('stopping stack {} ec2 instance'.format(name))
+    instance_id = cf.get_stack_output_value(
+      outputs=cf.get_stack_outputs(session, name),
+      output_key=config.stack_output_instance_id_key
+    )
+    aws.stop_ec2_instance(session, instance_id)
+
+def start_bastion(profile, region, name):
+    """
+    Stop a bastion ec2 instance
+    """
+    session = aws.get_session(profile_name=profile, region_name=region)
+    logger.info('starting stack {} ec2 instance'.format(name))
+    instance_id = cf.get_stack_output_value(
+      outputs=cf.get_stack_outputs(session, name),
+      output_key=config.stack_output_instance_id_key
+    )
+    aws.start_ec2_instance(session, instance_id)
 
 def ssh(profile, region, name, user):
     """

@@ -166,6 +166,32 @@ def list_stacks(opts):
         region=opts.region,
     )
 
+@bastion_group.command(name='stop')
+@click.option('--name', help='the name of the bastion cloudformation stack')
+@pass_opts
+def stop_bastion(opts, name):
+    """
+    Stop the bastion stack ec2 instance
+    """
+    ec2_patching.commands.stop_bastion(
+        profile=opts.profile,
+        region=opts.region,
+        name=name
+    )
+
+@bastion_group.command(name='start')
+@click.option('--name', help='the name of the bastion cloudformation stack')
+@pass_opts
+def stop_bastion(opts, name):
+    """
+    Start the bastion stack ec2 instance
+    """
+    ec2_patching.commands.start_bastion(
+        profile=opts.profile,
+        region=opts.region,
+        name=name
+    )
+
 @bastion_group.command(name='ssh')
 @click.option('--name', help='the name of the bastion cloudformation stack')
 @click.option('--user', default='ubuntu', help='the bastion ssh user')

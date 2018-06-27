@@ -316,3 +316,19 @@ def get_vpc_instances(session, vpc_id, path=None, detailed=False, bastion_name=N
 
     logger.debug(records)
     return records
+
+def stop_ec2_instance(session, instance_id):
+    """
+    Stop the bastion ec2 instance.
+    """
+    client = session.client('ec2')
+    logger.info('stopping instance: {}'.format(instance_id))
+    client.stop_instances(InstanceIds=[instance_id])
+
+def start_ec2_instance(session, instance_id):
+    """
+    Start the bastion ec2 instance.
+    """
+    client = session.client('ec2')
+    logger.info('starting instance: {}'.format(instance_id))
+    client.start_instances(InstanceIds=[instance_id])
