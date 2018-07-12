@@ -7,6 +7,9 @@ cli_tag_key = 'aws-patching'
 cli_tag_value = 'true'
 cli_version = __version__
 
+stack_output_instance_id_key = 'bastionInstanceId'
 stack_output_private_ip_key = 'bastionPrivateIp'
 stack_output_public_ip_key = 'bastionPublicIp'
 stack_output_vpc_id_key = 'bastionVpcId'
+
+opts = {}

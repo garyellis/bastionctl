@@ -1,4 +1,5 @@
 import ec2_patching.config as config
+import ec2_patching.keypairs
 import boto3
 from botocore.exceptions import ClientError
 from operator import itemgetter
@@ -29,6 +30,17 @@ def get_default_ami(session):
     amis = client.describe_images(Filters=[{ 'Name': 'name', 'Values': [ami_name] }])['Images']
     ami = sorted(amis, key=itemgetter('Name'), reverse=True)[0]
     return ami
+
+def get_ami_name(session, ami_id):
+    """
+    Returns the ami name for the given image id
+    """
+    client = session.client('ec2')
+    ami_name = ''
+    ami = client.describe_images(Filters=[{'Name': 'image-id', 'Values': [ami_id]}])['Images']
+    if ami:
+        ami_name = ami[0].get('Name')
+    return ami_name
 
 def filter_vpc_id(vpc_id):
     """
@@ -152,10 +164,6 @@ def get_vpc_summary(session, vpc_id):
     """
     client = session.client('ec2')
     vpc = client.describe_vpcs(**filter_vpc_id(vpc_id))['Vpcs']
-    # VpcId
-    # CidrBlock
-    # IsDefault
-    # tag:Name
 
 def get_in_use_enis(session, vpc_id):
     """
@@ -246,10 +254,7 @@ def get_vpcs(session):
         ]))
     return records
 
-import ec2_patching.keypairs
-
-@ec2_patching.keypairs.add_ssh_keys_fingerprints
-def get_vpc_instances(session, vpc_id, path=None):
+def get_instances(session):
     """
     """
     client = session.client('ec2')
@@ -258,17 +263,72 @@ def get_vpc_instances(session, vpc_id, path=None):
         instance for reservation in reservations
         for instance in reservation['Instances']
     ]
+    return instances
+
+def is_bastion_instance(session, name, instance):
+    """
+    Returns true if the instance is a bastion.
+    """
+    is_bastion = False
+    has_cli_tag = get_tag_value(instance.get('Tags'), config.cli_tag_key)
+    has_name_tag = get_tag_value(instance.get('Tags'))
+    state = instance['State']['Name']
+    if has_cli_tag and has_name_tag and state == 'running':
+        is_bastion = True
+    return is_bastion
+
+@ec2_patching.keypairs.add_ssh_keys_fingerprints
+def get_vpc_instances(session, vpc_id, path=None, detailed=False, bastion_name=None):
+    """
+    """
+    client = session.client('ec2')
+    instances = get_instances(session)
+    if vpc_id:
+        instances = [instance for instance in instances if instance.get('VpcId') == vpc_id]
 
     records = []
     for instance in instances:
         logger.debug('instance: {}'.format(instance))
-        records.append(OrderedDict([
-            #('launch_time', instance['LaunchTime']),
-            ('vpc_id', instance.get('VpcId')),
-            ('instance_id', instance['InstanceId']),
-            ('tag_name', get_tag_value(instance.get('Tags'))),
-            ('private_ip', instance.get('PrivateIpAddress')),
-            ('key_pair', instance.get('KeyName', '')),
-        ]))
+        if detailed:
+              records.append(OrderedDict([
+                  ('launch_time', instance.get('LaunchTime')),
+                  ('vpc_id', instance.get('VpcId')),
+                  ('instance_id', instance['InstanceId']),
+                  ('state', instance['State']['Name']),
+                  ('platform', instance.get('Platform')),
+                  ('tag_name', get_tag_value(instance.get('Tags'))),
+                  ('public_ip', instance.get('PublicIpAddress')),
+                  ('private_ip', instance.get('PrivateIpAddress')),
+                  ('key_pair', instance.get('KeyName', '')),
+                  ('bastion', is_bastion_instance(session, bastion_name, instance)),
+                  ('ami', instance.get('ImageId')),
+                  ('ami_name', get_ami_name(session, instance.get('ImageId'))),
+              ]))
+
+        else:
+            records.append(OrderedDict([
+                ('vpc_id', instance.get('VpcId')),
+                ('instance_id', instance['InstanceId']),
+                ('tag_name', get_tag_value(instance.get('Tags'))),
+                ('private_ip', instance.get('PrivateIpAddress')),
+                ('key_pair', instance.get('KeyName', '')),
+            ]))
+
     logger.debug(records)
     return records
+
+def stop_ec2_instance(session, instance_id):
+    """
+    Stop the bastion ec2 instance.
+    """
+    client = session.client('ec2')
+    logger.info('stopping instance: {}'.format(instance_id))
+    client.stop_instances(InstanceIds=[instance_id])
+
+def start_ec2_instance(session, instance_id):
+    """
+    Start the bastion ec2 instance.
+    """
+    client = session.client('ec2')
+    logger.info('starting instance: {}'.format(instance_id))
+    client.start_instances(InstanceIds=[instance_id])

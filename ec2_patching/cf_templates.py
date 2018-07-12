@@ -52,19 +52,25 @@ def setup_bastion_stack_outputs(instance, vpc_id):
     """
     """
     outputs = []
+    instance_id_key = config.stack_output_instance_id_key
     private_ip_key = config.stack_output_private_ip_key
     public_ip_key = config.stack_output_public_ip_key
     vpc_id_key = config.stack_output_vpc_id_key
 
     outputs.append(Output(
-        public_ip_key,
-        Description="Bastion public Ip address",
-        Value=GetAtt(instance, 'PublicIp')
+        instance_id_key,
+        Description="Bastion instance id",
+        Value=Ref(instance)
     ))
     outputs.append(Output(
         private_ip_key,
         Description="Bastion private Ip address",
         Value=GetAtt(instance, 'PrivateIp')
+    ))
+    outputs.append(Output(
+        public_ip_key,
+        Description="Bastion public Ip address",
+        Value=GetAtt(instance, 'PublicIp')
     ))
     outputs.append(Output(
         vpc_id_key,
