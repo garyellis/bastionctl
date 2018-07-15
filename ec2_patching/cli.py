@@ -127,9 +127,9 @@ def gen_template(opts, allow_ip, ami_id, instance_type, key_name, name, vpc_id):
 @click.option('--allow-ip', multiple=True, help='A list of CIDRs allowed by the bastion security group.')
 @click.option('--ami-id', help='Defaults to latest Ubuntu xenial marketplace image.')
 @click.option('--instance-type', default='t2.micro', help='The bastion instance type.')
-@click.option('--key-name', help='the bastion instance key name',default=None)
+@click.option('--key-name', help='use an existing keypair name',default=None)
 @click.option('--name', required=True, help='the name of the bastion related resources')
-@click.option('--ssh-public-key', help='import the ssh key', default=None)
+@click.option('--ssh-public-key', help='import the basiton instance keypair', default=None)
 @click.option('--vpc-id',required=True)
 @pass_opts
 def create_stack(opts, allow_ip, ami_id, instance_type, key_name, name, ssh_public_key, vpc_id):
@@ -149,15 +149,13 @@ def create_stack(opts, allow_ip, ami_id, instance_type, key_name, name, ssh_publ
     )
 
 @bastion_group.command(name='delete')
-@click.option('--delete-keypair/--no-delete-keypair', default=False, help='delete the imported bastion keypair')
 @click.option('--name', required=True, help='the name of the bastion cloudformation stack')
 @pass_opts
-def delete_stack(opts, delete_keypair, name):
+def delete_stack(opts, name):
     """
     Deletes the bastion cloudformation stack
     """
     ec2_patching.commands.delete_bastion(
-        delete_keypair=delete_keypair,
         name=name,
         profile=opts.profile,
         region=opts.region

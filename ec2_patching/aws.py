@@ -256,18 +256,19 @@ def get_vpcs(session):
 
 def get_instances(session):
     """
+    Returns a list of instances. Windows instances are ignored
     """
     client = session.client('ec2')
     reservations = client.describe_instances()['Reservations']
     instances = [
         instance for reservation in reservations
-        for instance in reservation['Instances']
+        for instance in reservation['Instances'] if not instance.get('Platform')
     ]
     return instances
 
 def is_bastion_instance(session, name, instance):
     """
-    Returns true if the instance is a bastion.
+    Returns true if the instance is a bastion created by this cli.
     """
     is_bastion = False
     has_cli_tag = get_tag_value(instance.get('Tags'), config.cli_tag_key)

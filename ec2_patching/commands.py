@@ -100,13 +100,28 @@ def create_bastion(name, ami_id, instance_type, key_name, ssh_public_key, vpc_id
     if not key_name and not ssh_public_key:
         logger.fatal('an ssh keypair name or ssh public key is required.')
         exit(1)
-    if ssh_public_key:
-        key_name = keypairs.import_keypair(session, name, ssh_public_key)
+
+    # validate the provided keypair name exists
+    if key_name:
+        if ssh_public_key:
+            logger.info('keypair name and ssh public key are mutually exclusive. ignoring the ssh public key')
+
+        logger.info('using existing keypair {}'.format(key_name))
+        if not keypairs.keypair_exists(session, key_name):
+            logger.fatal('the aws keypair {} does not exist'.format(key_name))
+            exit(1)
+
+    # create the keypair when a key name is not present and ssh key is provided
+    if not key_name and ssh_public_key:
+        key_name = keypairs.import_keypair(
+            session,
+            '{}-{}'.format(config.cli_tag_key, name),
+            ssh_public_key
+        )
 
     template = gen_bastion_template(name, ami_id, instance_type, key_name, vpc_id, bastion_sg_ingress, profile, region)
     logger.info('creating the cloudformation stack {}'.format(name))
 
-    # add stack tag to mark stacks created by the cli
     cf.create_stack(
         session,
         name,
@@ -117,23 +132,28 @@ def create_bastion(name, ami_id, instance_type, key_name, ssh_public_key, vpc_id
     logger.info('stack outputs: {}'.format(stack_outputs))
     logger.info('bastion create complete')
 
-def delete_bastion(delete_keypair, name, profile, region):
+def delete_bastion(name, profile, region):
     """
     Deletes the bastion cloudformation stack and keypair
     """
     session = aws.get_session(profile_name=profile, region_name=region)
 
-    if delete_keypair:
-        keypairs.delete_keypair(session, name)
+    # when the keypair name starts with the cli name, delete it
+    key_name = '{}-{}'.format(config.cli_tag_key, name)
+    if keypairs.keypair_exists(session, key_name):
+        keypairs.delete_keypair(session, key_name)
 
     logger.info('deleting the cloudformation stack {}'.format(name))
 
-    # delete the stack if the stack was created by the cli
-    
-    cf.delete_stack(
-        session,
-        name
-    )
+    # delete the stack only when it was created by the cli
+    if name in [i['StackName'] for i in cf.get_stacks(session)]:
+        cf.delete_stack(
+            session,
+            name
+        )
+    else:
+        logger.info('Stack {} either does not exist or was not created by this cli. Exiting'.format(name))
+
 
 def list_bastion(profile, region):
     """
