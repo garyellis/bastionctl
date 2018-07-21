@@ -21,25 +21,40 @@ def instances_list(profile, region, vpc_id, ssh_keys_path, detailed):
     # add autoscaling group and lc
     # add cloudformation stack
     # add load balancers
+    # parameterize the output format. default to table. support csv and json
     session = aws.get_session(profile_name=profile, region_name=region)
     instances = aws.get_vpc_instances(session=session, vpc_id=vpc_id, path=ssh_keys_path, detailed=detailed)
-    outputs.to_csv(
-        content=instances,
-        filename='instances-list-{}-{}.csv'.format(profile, region)
-    )
+
+    #outputs.to_csv(
+    #    content=instances,
+    #    filename='instances-list-{}-{}.csv'.format(profile, region)
+    #)
+
     print tabulate.tabulate(instances, headers='keys')
 
-def instances_gen_ansible_inventory(profile, region, vpc_id, name, ssh_keys_path):
+
+def instances_gen_ansible_inventory(profile, region, vpc_id, name, ssh_keys_path, filename):
     """
     Generates an ansible inventory file.
     """
     logger.info('generating ansible inventory')
     session = aws.get_session(profile_name=profile, region_name=region)
-    instances = aws.get_vpc_instances(session=session, vpc_id=vpc_id, path=ssh_keys_path, detailed=True, bastion_name=name)
+    instances = aws.get_vpc_instances(
+        session=session,
+        vpc_id=vpc_id,
+        path=ssh_keys_path,
+        detailed=True,
+        bastion_name=name
+    )
 
-    inventory_filename = 'inventory-{}-{}-{}.yaml'.format(profile, region, name)
-    inventory = ansible_inventory.to_inventory(records=instances, group_name=name)
-    utils.to_yaml(inventory, inventory_filename)
+    if not filename:
+        filename = 'inventory-{}-{}-{}.yaml'.format(profile, region, name)
+
+    inventory = ansible_inventory.to_inventory(
+        records=instances,
+        group_name=name
+    )
+    utils.to_yaml(inventory, filename)
 
 
 # vpc group commands
