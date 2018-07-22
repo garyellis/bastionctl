@@ -4,8 +4,7 @@ from ec2_patching import keypairs
 from ec2_patching import cf_templates
 from ec2_patching import cf
 from ec2_patching import utils
-import ec2_patching.outputs as outputs
-import ec2_patching.outputs.ansible_inventory as ansible_inventory
+from ec2_patching import ansible_inventory
 import logging
 import tabulate
 import os
@@ -21,16 +20,13 @@ def instances_list(profile, region, vpc_id, ssh_keys_path, detailed):
     # add autoscaling group and lc
     # add cloudformation stack
     # add load balancers
-    # parameterize the output format. default to table. support csv and json
     session = aws.get_session(profile_name=profile, region_name=region)
     instances = aws.get_vpc_instances(session=session, vpc_id=vpc_id, path=ssh_keys_path, detailed=detailed)
 
-    #outputs.to_csv(
-    #    content=instances,
-    #    filename='instances-list-{}-{}.csv'.format(profile, region)
-    #)
-
-    print tabulate.tabulate(instances, headers='keys')
+    utils.output(
+        items=instances,
+        output_format='table'
+    )
 
 
 def instances_gen_ansible_inventory(profile, region, vpc_id, name, ssh_keys_path, filename):
@@ -54,17 +50,29 @@ def instances_gen_ansible_inventory(profile, region, vpc_id, name, ssh_keys_path
         records=instances,
         group_name=name
     )
-    utils.to_yaml(inventory, filename)
+
+    utils.output(
+        items=inventory,
+        output_format='yaml',
+        filename=filename
+    )
+
 
 
 # vpc group commands
-def vpc_list(profile, region):
+def vpc_list(profile, region, output_format='table'):
     """
     Lists vpcs info
     """
     session = aws.get_session(profile_name=profile, region_name=region)
     vpcs = aws.get_vpcs(session)
-    print tabulate.tabulate(vpcs, headers='keys')
+
+    utils.output(
+        items=vpcs,
+        output_format=output_format,
+        filename=None
+    )
+
 
 # bastion group commands
 def gen_bastion_template(name, ami_id, instance_type, key_name, vpc_id, bastion_sg_ingress, profile, region):
@@ -105,6 +113,7 @@ def gen_bastion_template(name, ami_id, instance_type, key_name, vpc_id, bastion_
 
     cf.validate_template(session, bastion_template)
     return bastion_template
+
 
 def create_bastion(name, ami_id, instance_type, key_name, ssh_public_key, vpc_id, bastion_sg_ingress, profile, region):
     """
@@ -147,6 +156,7 @@ def create_bastion(name, ami_id, instance_type, key_name, ssh_public_key, vpc_id
     logger.info('stack outputs: {}'.format(stack_outputs))
     logger.info('bastion create complete')
 
+
 def delete_bastion(name, profile, region):
     """
     Deletes the bastion cloudformation stack and keypair
@@ -177,7 +187,11 @@ def list_bastion(profile, region):
     session = aws.get_session(profile_name=profile, region_name=region)
     bastion_stacks = cf.get_stack_summaries(session)
 
-    print tabulate.tabulate(bastion_stacks, headers='keys')
+    utils.output(
+        items=bastion_stacks,
+        output_format='table'
+    )
+
 
 def stop_bastion(profile, region, name):
     """
@@ -191,9 +205,10 @@ def stop_bastion(profile, region, name):
     )
     aws.stop_ec2_instance(session, instance_id)
 
+
 def start_bastion(profile, region, name):
     """
-    Stop a bastion ec2 instance
+    Start a bastion ec2 instance
     """
     session = aws.get_session(profile_name=profile, region_name=region)
     logger.info('starting stack {} ec2 instance'.format(name))
@@ -202,6 +217,7 @@ def start_bastion(profile, region, name):
       output_key=config.stack_output_instance_id_key
     )
     aws.start_ec2_instance(session, instance_id)
+
 
 def ssh(profile, region, name, user):
     """

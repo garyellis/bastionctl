@@ -144,6 +144,7 @@ def get_first_public_subnet_id(session, vpc_id):
     if public_subnet_ids:
         return public_subnet_ids[0]
 
+
 def get_security_group_ids(session, vpc_id):
     """
     Returns a list of security group ids minus the bastion sg
@@ -154,16 +155,13 @@ def get_security_group_ids(session, vpc_id):
     security_group_ids = [sg['GroupId'] for sg in security_groups if not get_tag_value(sg.get('Tags'), key=exclude_tag)]
     return security_group_ids
 
-def get_subnets(session):
-    """
-    """
-    
 
 def get_vpc_summary(session, vpc_id):
     """
     """
     client = session.client('ec2')
     vpc = client.describe_vpcs(**filter_vpc_id(vpc_id))['Vpcs']
+
 
 def get_in_use_enis(session, vpc_id):
     """
@@ -174,6 +172,7 @@ def get_in_use_enis(session, vpc_id):
     eni_filter['Filters'].append({'Name': 'status', 'Values': ['in-use']})
     enis = client.describe_network_interfaces(**eni_filter)['NetworkInterfaces']
     return enis
+
 
 def count_eip_enis(enis):
     """
@@ -186,6 +185,7 @@ def count_eip_enis(enis):
             if association['IpOwnerId'] != 'amazon':
                 eni_eips.append(eni)
     return len(eni_eips)
+
 
 def count_public_enis(enis):
     """
@@ -202,6 +202,7 @@ def count_private_enis(enis):
     private_enis = [eni for eni in enis if not eni.get('Association')]
     return len(private_enis)
 
+
 def has_natgw(session, vpc_id):
     """
     Returns true if a nat gw is associated to the vpc
@@ -212,6 +213,7 @@ def has_natgw(session, vpc_id):
     if nat_gateways:
         has_nat_gateway = True
     return has_nat_gateway
+
 
 def has_igw(session, vpc_id):
     """
@@ -224,6 +226,7 @@ def has_igw(session, vpc_id):
     if igw:
         has_igw = True
     return has_igw
+
 
 def get_vpcs(session):
     """
@@ -254,6 +257,7 @@ def get_vpcs(session):
         ]))
     return records
 
+
 def get_instances(session):
     """
     Returns a list of instances. Windows instances are ignored
@@ -266,6 +270,7 @@ def get_instances(session):
     ]
     return instances
 
+
 def is_bastion_instance(session, name, instance):
     """
     Returns true if the instance is a bastion created by this cli.
@@ -277,6 +282,7 @@ def is_bastion_instance(session, name, instance):
     if has_cli_tag and has_name_tag and state == 'running':
         is_bastion = True
     return is_bastion
+
 
 @ec2_patching.keypairs.add_ssh_keys_fingerprints
 def get_vpc_instances(session, vpc_id, path=None, detailed=False, bastion_name=None):
@@ -318,6 +324,7 @@ def get_vpc_instances(session, vpc_id, path=None, detailed=False, bastion_name=N
     logger.debug(records)
     return records
 
+
 def stop_ec2_instance(session, instance_id):
     """
     Stop the bastion ec2 instance.
@@ -325,6 +332,7 @@ def stop_ec2_instance(session, instance_id):
     client = session.client('ec2')
     logger.info('stopping instance: {}'.format(instance_id))
     client.stop_instances(InstanceIds=[instance_id])
+
 
 def start_ec2_instance(session, instance_id):
     """
