@@ -11,7 +11,7 @@ class Opts(object):
 
 pass_opts = click.make_pass_decorator(Opts, ensure=True)
 
-@click.group()
+@click.group(invoke_without_command=True)
 @click.option(
     '--log-level',
     default='INFO',
@@ -26,8 +26,14 @@ pass_opts = click.make_pass_decorator(Opts, ensure=True)
     default='us-west-2',
     help='the aws region. Defaults to us-west-2'
 )
+@click.option(
+    '--version',
+    is_flag=True,
+    default=False,
+    help='Version of this utility'
+)
 @pass_opts
-def cli(opts, log_level, profile, region):
+def cli(opts, log_level, profile, region, version):
     """
     """
     logger = ec2_patching.utils.setup_logging(log_level)
@@ -36,6 +42,8 @@ def cli(opts, log_level, profile, region):
     opts.region = region
     # set state in config module
     config.opts = opts
+    if version:
+      click.echo(ec2_patching.config.cli_version)
 
 @click.group(name='instances')
 def instances_group():
