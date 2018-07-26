@@ -1,6 +1,4 @@
 from ec2_patching.cli import cli
-import pytest
-import click
 from click.testing import CliRunner
 
 

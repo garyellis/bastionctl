@@ -12,6 +12,7 @@ class Opts(object):
 
 pass_opts = click.make_pass_decorator(Opts, ensure=True)
 
+
 @click.group(invoke_without_command=True)
 @click.option(
     '--log-level',
