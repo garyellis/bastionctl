@@ -1,2 +1,5 @@
 troposphere
+flake8
+moto
+mock
 pytest

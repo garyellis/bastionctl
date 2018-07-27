@@ -9,11 +9,11 @@ ec2-patching enables ssh access to linux ec2 instances dispersed across vpcs and
 
 Features:
 
-- automatically creates and deletes a bastion ec2 instance and needed security group rules to ssh into all vpc instances.
+- Automatically creates and deletes a bastion ec2 instance and needed security group rules to ssh into all vpc instances.
 - lists bastions summary
 - lists vpcs summary
-- lists ec2 instances (todo)
-- generates ssh config and ansible inventory (todo)
+- lists ec2 instances
+- generates ansible inventory. maps ami users and ssh keys to instances
 - ssh bastion
 - ssh instance through bastion (todo)
 

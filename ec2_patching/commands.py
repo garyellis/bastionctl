@@ -4,8 +4,7 @@ from ec2_patching import keypairs
 from ec2_patching import cf_templates
 from ec2_patching import cf
 from ec2_patching import utils
-import ec2_patching.outputs as outputs
-import ec2_patching.outputs.ansible_inventory as ansible_inventory
+from ec2_patching import ansible_inventory
 import logging
 import tabulate
 import os
@@ -23,33 +22,57 @@ def instances_list(profile, region, vpc_id, ssh_keys_path, detailed):
     # add load balancers
     session = aws.get_session(profile_name=profile, region_name=region)
     instances = aws.get_vpc_instances(session=session, vpc_id=vpc_id, path=ssh_keys_path, detailed=detailed)
-    outputs.to_csv(
-        content=instances,
-        filename='instances-list-{}-{}.csv'.format(profile, region)
-    )
-    print tabulate.tabulate(instances, headers='keys')
 
-def instances_gen_ansible_inventory(profile, region, vpc_id, name, ssh_keys_path):
+    utils.output(
+        items=instances,
+        output_format='table'
+    )
+
+
+def instances_gen_ansible_inventory(profile, region, vpc_id, name, ssh_keys_path, filename):
     """
     Generates an ansible inventory file.
     """
     logger.info('generating ansible inventory')
     session = aws.get_session(profile_name=profile, region_name=region)
-    instances = aws.get_vpc_instances(session=session, vpc_id=vpc_id, path=ssh_keys_path, detailed=True, bastion_name=name)
+    instances = aws.get_vpc_instances(
+        session=session,
+        vpc_id=vpc_id,
+        path=ssh_keys_path,
+        detailed=True,
+        bastion_name=name
+    )
 
-    inventory_filename = 'inventory-{}-{}-{}.yaml'.format(profile, region, name)
-    inventory = ansible_inventory.to_inventory(records=instances, group_name=name)
-    utils.to_yaml(inventory, inventory_filename)
+    if not filename:
+        filename = 'inventory-{}-{}-{}.yaml'.format(profile, region, name)
+
+    inventory = ansible_inventory.to_inventory(
+        records=instances,
+        group_name=name
+    )
+
+    utils.output(
+        items=inventory,
+        output_format='yaml',
+        filename=filename
+    )
+
 
 
 # vpc group commands
-def vpc_list(profile, region):
+def vpc_list(profile, region, output_format='table'):
     """
     Lists vpcs info
     """
     session = aws.get_session(profile_name=profile, region_name=region)
     vpcs = aws.get_vpcs(session)
-    print tabulate.tabulate(vpcs, headers='keys')
+
+    utils.output(
+        items=vpcs,
+        output_format=output_format,
+        filename=None
+    )
+
 
 # bastion group commands
 def gen_bastion_template(name, ami_id, instance_type, key_name, vpc_id, bastion_sg_ingress, profile, region):
@@ -91,6 +114,7 @@ def gen_bastion_template(name, ami_id, instance_type, key_name, vpc_id, bastion_
     cf.validate_template(session, bastion_template)
     return bastion_template
 
+
 def create_bastion(name, ami_id, instance_type, key_name, ssh_public_key, vpc_id, bastion_sg_ingress, profile, region):
     """
     Creates the bastion keypair and cloudformation stack
@@ -100,13 +124,28 @@ def create_bastion(name, ami_id, instance_type, key_name, ssh_public_key, vpc_id
     if not key_name and not ssh_public_key:
         logger.fatal('an ssh keypair name or ssh public key is required.')
         exit(1)
-    if ssh_public_key:
-        key_name = keypairs.import_keypair(session, name, ssh_public_key)
+
+    # validate the provided keypair name exists
+    if key_name:
+        if ssh_public_key:
+            logger.info('keypair name and ssh public key are mutually exclusive. ignoring the ssh public key')
+
+        logger.info('using existing keypair {}'.format(key_name))
+        if not keypairs.keypair_exists(session, key_name):
+            logger.fatal('the aws keypair {} does not exist'.format(key_name))
+            exit(1)
+
+    # create the keypair when a key name is not present and ssh key is provided
+    if not key_name and ssh_public_key:
+        key_name = keypairs.import_keypair(
+            session,
+            '{}-{}'.format(config.cli_tag_key, name),
+            ssh_public_key
+        )
 
     template = gen_bastion_template(name, ami_id, instance_type, key_name, vpc_id, bastion_sg_ingress, profile, region)
     logger.info('creating the cloudformation stack {}'.format(name))
 
-    # add stack tag to mark stacks created by the cli
     cf.create_stack(
         session,
         name,
@@ -117,23 +156,29 @@ def create_bastion(name, ami_id, instance_type, key_name, ssh_public_key, vpc_id
     logger.info('stack outputs: {}'.format(stack_outputs))
     logger.info('bastion create complete')
 
-def delete_bastion(delete_keypair, name, profile, region):
+
+def delete_bastion(name, profile, region):
     """
     Deletes the bastion cloudformation stack and keypair
     """
     session = aws.get_session(profile_name=profile, region_name=region)
 
-    if delete_keypair:
-        keypairs.delete_keypair(session, name)
+    # when the keypair name starts with the cli name, delete it
+    key_name = '{}-{}'.format(config.cli_tag_key, name)
+    if keypairs.keypair_exists(session, key_name):
+        keypairs.delete_keypair(session, key_name)
 
     logger.info('deleting the cloudformation stack {}'.format(name))
 
-    # delete the stack if the stack was created by the cli
-    
-    cf.delete_stack(
-        session,
-        name
-    )
+    # delete the stack only when it was created by the cli
+    if name in [i['StackName'] for i in cf.get_stacks(session)]:
+        cf.delete_stack(
+            session,
+            name
+        )
+    else:
+        logger.info('Stack {} either does not exist or was not created by this cli. Exiting'.format(name))
+
 
 def list_bastion(profile, region):
     """
@@ -142,7 +187,11 @@ def list_bastion(profile, region):
     session = aws.get_session(profile_name=profile, region_name=region)
     bastion_stacks = cf.get_stack_summaries(session)
 
-    print tabulate.tabulate(bastion_stacks, headers='keys')
+    utils.output(
+        items=bastion_stacks,
+        output_format='table'
+    )
+
 
 def stop_bastion(profile, region, name):
     """
@@ -156,9 +205,10 @@ def stop_bastion(profile, region, name):
     )
     aws.stop_ec2_instance(session, instance_id)
 
+
 def start_bastion(profile, region, name):
     """
-    Stop a bastion ec2 instance
+    Start a bastion ec2 instance
     """
     session = aws.get_session(profile_name=profile, region_name=region)
     logger.info('starting stack {} ec2 instance'.format(name))
@@ -167,6 +217,7 @@ def start_bastion(profile, region, name):
       output_key=config.stack_output_instance_id_key
     )
     aws.start_ec2_instance(session, instance_id)
+
 
 def ssh(profile, region, name, user):
     """

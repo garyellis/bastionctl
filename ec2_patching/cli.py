@@ -3,6 +3,7 @@ import ec2_patching.commands
 import ec2_patching.utils
 import click
 
+
 class Opts(object):
     def __init(self):
         self.profile = None
@@ -10,6 +11,7 @@ class Opts(object):
 
 
 pass_opts = click.make_pass_decorator(Opts, ensure=True)
+
 
 @click.group(invoke_without_command=True)
 @click.option(
@@ -45,35 +47,76 @@ def cli(opts, log_level, profile, region, version):
     if version:
       click.echo(ec2_patching.config.cli_version)
 
+
 @click.group(name='instances')
 def instances_group():
     """
     Commands for viewing and exporting instances resources
     """
 
+
 @instances_group.command(name='list')
-@click.option('--vpc-id', help='filter vpcs by vpc id')
-@click.option('--name', help='filter vpcs by associated bastion')
-@click.option('--ssh-keys-path', help='ssh keys path')
-@click.option('--detailed/--no-detailed', default=False, help='output detailed instances info')
+@click.option(
+    '--vpc-id',
+    help='filter vpcs by vpc id'
+)
+@click.option(
+    '--name',
+    help='filter vpcs by associated bastion'
+)
+@click.option(
+    '--ssh-keys-path',
+    help='ssh keys path'
+)
+@click.option(
+    '--detailed/--no-detailed',
+    default=False,
+    help='output detailed instances info'
+)
 @pass_opts
 def instances_list(opts, name, vpc_id, ssh_keys_path, detailed):
     """
     List instances
     """
-    ec2_patching.commands.instances_list(opts.profile, opts.region, vpc_id, ssh_keys_path, detailed)
+    ec2_patching.commands.instances_list(
+        profile=opts.profile,
+        region=opts.region,
+        vpc_id=vpc_id,
+        ssh_keys_path=ssh_keys_path,
+        detailed=detailed
+    )
 
 
 @instances_group.command(name='gen-ansible-inventory')
-@click.option('--vpc-id', help='filter vpcs by vpc id')
-@click.option('--name', help='filter vpcs by associated bastion')
-@click.option('--ssh-keys-path', help='ssh keys path')
+@click.option(
+    '--vpc-id',
+    help='filter vpcs by vpc id'
+)
+@click.option(
+    '--name',
+    help='filter vpcs by associated bastion'
+)
+@click.option(
+    '--ssh-keys-path',
+    help='ssh keys path'
+)
+@click.option(
+    '--out',
+    help='the output filename'
+)
 @pass_opts
-def instances_gen_ansible_inventory(opts, name, vpc_id, ssh_keys_path):
+def instances_gen_ansible_inventory(opts, name, vpc_id, ssh_keys_path, out):
     """
     Generate an ansible inventory file
     """
-    ec2_patching.commands.instances_gen_ansible_inventory(opts.profile, opts.region, vpc_id, name, ssh_keys_path)
+    ec2_patching.commands.instances_gen_ansible_inventory(
+        profile=opts.profile,
+        region=opts.region,
+        vpc_id=vpc_id,
+        name=name,
+        ssh_keys_path=ssh_keys_path,
+        filename=out
+    )
 
 
 @click.group(name='vpc')
@@ -82,15 +125,32 @@ def vpc_group():
     Commands for viewing vpc resources
     """
 
+
 @vpc_group.command(name='list')
-@click.option('--name', help='filter vpcs by name')
-@click.option('--cidr', help='filter vpcs by cidr')
+@click.option(
+    '--name',
+    help='filter vpcs by name'
+)
+@click.option(
+    '--cidr',
+    help='filter vpcs by cidr'
+)
+@click.option(
+    '--fmt',
+    default='table',
+    help='the output format'
+)
 @pass_opts
-def vpcs_list(opts, name, cidr):
+def vpcs_list(opts, name, cidr, fmt):
     """
     List vpcs
     """
-    ec2_patching.commands.vpc_list(opts.profile, opts.region)
+    ec2_patching.commands.vpc_list(
+        profile=opts.profile,
+        region=opts.region,
+        output_format=fmt
+    )
+
 
 @click.group(name='bastion')
 def bastion_group():
@@ -98,13 +158,35 @@ def bastion_group():
     Commands for managing a bastion ec2 instance and security group rules
     """
 
+
 @bastion_group.command(name='gen-template')
-@click.option('--allow-ip', multiple=True, help='A list of CIDRs allowed by the bastion security group.')
-@click.option('--ami-id', help='Defaults to latest Ubuntu xenial marketplace image.')
-@click.option('--instance-type', default='t2.micro', help='the bastion instance type.')
-@click.option('--key-name', help='the bastion instance key name')
-@click.option('--name', required=True, help='the name of the bastion related resources')
-@click.option('--vpc-id',required=True)
+@click.option(
+    '--allow-ip',
+    multiple=True,
+    help='A list of CIDRs allowed by the bastion security group.'
+)
+@click.option(
+    '--ami-id',
+    help='Defaults to latest Ubuntu xenial marketplace image.'
+)
+@click.option(
+    '--instance-type',
+    default='t2.micro',
+    help='the bastion instance type.'
+)
+@click.option(
+    '--key-name',
+    help='the bastion instance key name'
+)
+@click.option(
+    '--name',
+    required=True,
+    help='the name of the bastion related resources'
+)
+@click.option(
+    '--vpc-id',
+    required=True
+)
 @pass_opts
 def gen_template(opts, allow_ip, ami_id, instance_type, key_name, name, vpc_id):
     """
@@ -123,14 +205,41 @@ def gen_template(opts, allow_ip, ami_id, instance_type, key_name, name, vpc_id):
     )
     print bastion_template
 
+
 @bastion_group.command(name='create')
-@click.option('--allow-ip', multiple=True, help='A list of CIDRs allowed by the bastion security group.')
-@click.option('--ami-id', help='Defaults to latest Ubuntu xenial marketplace image.')
-@click.option('--instance-type', default='t2.micro', help='The bastion instance type.')
-@click.option('--key-name', help='the bastion instance key name',default=None)
-@click.option('--name', required=True, help='the name of the bastion related resources')
-@click.option('--ssh-public-key', help='import the ssh key', default=None)
-@click.option('--vpc-id',required=True)
+@click.option(
+    '--allow-ip',
+    multiple=True,
+    help='A list of CIDRs allowed by the bastion security group.'
+)
+@click.option(
+    '--ami-id',
+    help='Defaults to latest Ubuntu xenial marketplace image.'
+)
+@click.option(
+    '--instance-type',
+    default='t2.micro',
+    help='The bastion instance type.'
+)
+@click.option(
+    '--key-name',
+    help='use an existing keypair name',
+    default=None
+)
+@click.option(
+    '--name',
+    required=True,
+    help='the name of the bastion related resources'
+)
+@click.option(
+    '--ssh-public-key',
+    help='import the basiton instance keypair',
+    default=None
+)
+@click.option(
+    '--vpc-id',
+    required=True
+)
 @pass_opts
 def create_stack(opts, allow_ip, ami_id, instance_type, key_name, name, ssh_public_key, vpc_id):
     """
@@ -148,20 +257,24 @@ def create_stack(opts, allow_ip, ami_id, instance_type, key_name, name, ssh_publ
         region=opts.region
     )
 
+
 @bastion_group.command(name='delete')
-@click.option('--delete-keypair/--no-delete-keypair', default=False, help='delete the imported bastion keypair')
-@click.option('--name', required=True, help='the name of the bastion cloudformation stack')
+@click.option(
+    '--name',
+    required=True,
+    help='the name of the bastion cloudformation stack'
+)
 @pass_opts
-def delete_stack(opts, delete_keypair, name):
+def delete_stack(opts, name):
     """
     Deletes the bastion cloudformation stack
     """
     ec2_patching.commands.delete_bastion(
-        delete_keypair=delete_keypair,
         name=name,
         profile=opts.profile,
         region=opts.region
     )
+
 
 @bastion_group.command(name='list')
 @pass_opts
@@ -174,8 +287,12 @@ def list_stacks(opts):
         region=opts.region,
     )
 
+
 @bastion_group.command(name='stop')
-@click.option('--name', help='the name of the bastion cloudformation stack')
+@click.option(
+    '--name',
+    help='the name of the bastion cloudformation stack'
+)
 @pass_opts
 def stop_bastion(opts, name):
     """
@@ -187,10 +304,14 @@ def stop_bastion(opts, name):
         name=name
     )
 
+
 @bastion_group.command(name='start')
-@click.option('--name', help='the name of the bastion cloudformation stack')
+@click.option(
+    '--name',
+    help='the name of the bastion cloudformation stack'
+)
 @pass_opts
-def stop_bastion(opts, name):
+def start_bastion(opts, name):
     """
     Start the bastion stack ec2 instance
     """
@@ -200,11 +321,19 @@ def stop_bastion(opts, name):
         name=name
     )
 
+
 @bastion_group.command(name='ssh')
-@click.option('--name', help='the name of the bastion cloudformation stack')
-@click.option('--user', default='ubuntu', help='the bastion ssh user')
+@click.option(
+    '--name',
+    help='the name of the bastion cloudformation stack'
+)
+@click.option(
+    '--user',
+    default='ubuntu',
+    help='the bastion ssh user'
+)
 @pass_opts
-def list_stacks(opts, name, user):
+def bastion_ssh(opts, name, user):
     """
     ssh into the bastion instance
     """
@@ -214,6 +343,7 @@ def list_stacks(opts, name, user):
         name=name,
         user=user
     )
+
 
 cli.add_command(instances_group)
 cli.add_command(bastion_group)

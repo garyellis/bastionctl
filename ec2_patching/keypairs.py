@@ -14,7 +14,7 @@ def import_keypair(session, name, public_key_material):
     """
     client = session.client('ec2')
     public_key_material = public_key_material
-    logger.info('import ssh key {} {}'.format(name, public_key_material))
+    logger.info('importing keypair {} {}'.format(name, public_key_material))
     try:
         keypair = client.import_key_pair(
             KeyName=name,
@@ -44,6 +44,13 @@ def get_keypairs(session):
     client = session.client('ec2')
     keypairs = client.describe_key_pairs()['KeyPairs']
     return keypairs
+
+def keypair_exists(session, name):
+    """
+    """
+    keypairs = [i['KeyName'] for i in get_keypairs(session)]
+    if name in keypairs:
+        return True
 
 def get_keypair_fingerprint(keypairs, name):
     """
