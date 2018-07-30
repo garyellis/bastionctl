@@ -1,32 +1,40 @@
 import ec2_patching.aws
-import ec2_patching.config as config
-import mock
+import boto3
 import pytest
 from moto import mock_ec2
+
+
+@pytest.fixture
+def get_tags_data():
+    """
+    """
+    return [
+        {'Key': 'Name', 'Value': 'Foo'},
+        {'Key': 'Test', 'Value': 'Bar'}
+    ]
+
+
+@pytest.fixture
+def get_ami_data():
+    """
+    """
+    return {
+        'ami_id': 'ami-785db401',
+        'ami_name': 'ubuntu/images/hvm-ssd/ubuntu-xenial-16.04-amd64-server-20170721'
+    }
 
 
 class TestAws(object):
     def setup_method(self, test_method):
         self.session = ec2_patching.aws.get_session(profile_name=None)
-        self.test_ami_id = 'ami-785db401'
-        self.test_ami_name = 'ubuntu/images/hvm-ssd/ubuntu-xenial-16.04-amd64-server-20170721'
 
-    def teardown_method(self, test_method):
-        pass
-
-    def test_get_tag_value_default(self):
-        tags = [
-            { 'Key': 'Name', 'Value': 'Foo' },
-            { 'Key': 'Test', 'Value': 'Bar' }
-        ]
+    def test_get_tag_value_default(self, get_tags_data):
+        tags = get_tags_data
         tag_value = ec2_patching.aws.get_tag_value(tags=tags)
         assert tag_value == 'Foo'
 
-    def test_get_tag_value(self):
-        tags = [
-            { 'Key': 'Name', 'Value': 'Foo' },
-            { 'Key': 'Test', 'Value': 'Bar' }
-        ]
+    def test_get_tag_value(self, get_tags_data):
+        tags = get_tags_data
         tag_value = ec2_patching.aws.get_tag_value(
             tags=tags,
             key='Test'
@@ -39,21 +47,32 @@ class TestAws(object):
         assert 'ImageId' in ami
 
     @mock_ec2
-    def test_get_ami_id(self):
-        ami_id = ec2_patching.aws.get_ami_name(
+    def test_get_ami_id(self, get_ami_data):
+        ami_name = ec2_patching.aws.get_ami_name(
             self.session,
-        self.test_ami_id)
-        assert self.test_ami_name == ami_id
+            get_ami_data['ami_id']
+        )
+        assert get_ami_data['ami_name'] == ami_name
 
     @mock_ec2
     def test_get_route_tables(self):
-        client = self.session.client('ec2')
+        client = boto3.client('ec2')
         vpcs = client.describe_vpcs()['Vpcs']
         route_tables = ec2_patching.aws.get_route_tables(
             session=self.session,
             vpc_id=vpcs[0]['VpcId']
         )
         assert 'rtb' in route_tables[0]['RouteTableId']
+
+    @mock_ec2
+    def test_get_public_route_tables(self):
+        client = boto3.client('ec2')
+        vpcs = client.describe_vpcs()['Vpcs']
+        public_route_tables = ec2_patching.aws.get_public_route_tables(
+            session=self.session,
+            vpc_id=vpcs[0]['VpcId']
+        )
+        assert len(public_route_tables) == 0
 
     @mock_ec2
     def test_get_vpcs(self):
@@ -68,4 +87,3 @@ class TestAws(object):
         assert 'subnets_total' in vpcs[0]
         assert 'tag_name' in vpcs[0]
         assert 'vpc_id' in vpcs[0]
-        

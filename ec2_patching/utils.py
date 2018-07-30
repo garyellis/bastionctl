@@ -74,7 +74,7 @@ def to_yaml(items, filename):
         print yaml.safe_dump(data=i, stream=None, **opts)
     else:
         logger.info('writing file to {}'.format(filename))
-        with open( filename, 'w') as s:
+        with open(filename, 'w') as s:
             yaml.safe_dump(data=i, stream=s, **opts)
 
 

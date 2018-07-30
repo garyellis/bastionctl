@@ -1,4 +1,3 @@
-import yaml
 import re
 from troposphere import (
   GetAtt,
@@ -26,11 +25,13 @@ def sanitize_resource_name(name):
     sanitized_name = nonalphanumeric.sub('', name).lower()
     return sanitized_name
 
+
 def tags(name):
     """
     Returns a tags resource containing Name tag 
     """
     return Tags({'Name': name})
+
 
 def ec2_instance(name, ami_id, keyname, instance_type, sg_ids, subnet_id):
     """
@@ -51,11 +52,6 @@ def ec2_instance(name, ami_id, keyname, instance_type, sg_ids, subnet_id):
       Tags=tags(name)
     )
 
-def ec2_instance_outputs(name):
-    """
-    """
-    outputs = []
-
 
 def security_group(name, desc, vpc_id):
     """
@@ -68,6 +64,7 @@ def security_group(name, desc, vpc_id):
         VpcId=vpc_id,
         Tags=tags(name)
     )
+
 
 def security_group_egress(name, desc, ip_protocol, from_port, to_port, group_id, cidr):
     """
@@ -84,6 +81,7 @@ def security_group_egress(name, desc, ip_protocol, from_port, to_port, group_id,
         CidrIp=cidr,
     )
 
+
 def security_group_ingress(name, desc, ip_protocol, from_port, to_port, group_id, cidr):
     """
     Returns a security group ingress rule resource
@@ -99,12 +97,14 @@ def security_group_ingress(name, desc, ip_protocol, from_port, to_port, group_id
         CidrIp=cidr,
     )
 
+
 def add_template_resources(template, resources=[]):
     """
     adds a list of resources to the template
     """
     for i in resources:
         template.add_resource(i)
+
 
 def add_template_outputs(template, outputs=[]):
     """
