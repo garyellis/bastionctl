@@ -1,5 +1,5 @@
-import ec2_patching.config as config
-import ec2_patching.keypairs
+import bastionctl.config as config
+import bastionctl.keypairs
 import boto3
 from botocore.exceptions import ClientError
 from operator import itemgetter
@@ -9,11 +9,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def get_session(profile_name,region_name='us-west-2'):
+def get_session(profile_name, region_name='us-west-2'):
     """
     Returns a boto session for the given profile and region
     """
-    session = boto3.session.Session(profile_name=profile_name, region_name=region_name)
+    session = boto3.session.Session(
+        profile_name=profile_name,
+        region_name=region_name
+    )
     return session
 
 
@@ -30,7 +33,9 @@ def get_default_ami(session):
     """
     ami_name = config.ami_name
     client = session.client('ec2')
-    amis = client.describe_images(Filters=[{ 'Name': 'name', 'Values': [ami_name] }])['Images']
+    amis = client.describe_images(
+        Filters=[{'Name': 'name', 'Values': [ami_name]}]
+    )['Images']
     ami = sorted(amis, key=itemgetter('Name'), reverse=True)[0]
     return ami
 
@@ -41,7 +46,9 @@ def get_ami_name(session, ami_id):
     """
     client = session.client('ec2')
     ami_name = ''
-    ami = client.describe_images(Filters=[{'Name': 'image-id', 'Values': [ami_id]}])['Images']
+    ami = client.describe_images(
+        Filters=[{'Name': 'image-id', 'Values': [ami_id]}]
+    )['Images']
     if ami:
         ami_name = ami[0].get('Name')
     return ami_name
@@ -72,7 +79,7 @@ def has_public_route(routes):
     """
     if routes:
         for route in routes:
-            if 'igw-' in route.get('GatewayId', ''): # and route.get('DestinationCidrBlock') == '0.0.0.0/0':
+            if 'igw-' in route.get('GatewayId', ''):
                 return True
 
 
@@ -296,7 +303,7 @@ def is_bastion_instance(session, name, instance):
     return is_bastion
 
 
-@ec2_patching.keypairs.add_ssh_keys_fingerprints
+@bastionctl.keypairs.add_ssh_keys_fingerprints
 def get_vpc_instances(session, vpc_id, path=None, detailed=False, bastion_name=None):
     """
     """

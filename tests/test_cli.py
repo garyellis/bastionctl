@@ -1,5 +1,5 @@
-from ec2_patching import __version__
-from ec2_patching.cli import cli
+from bastionctl import __version__
+from bastionctl.cli import cli
 from click.testing import CliRunner
 
 

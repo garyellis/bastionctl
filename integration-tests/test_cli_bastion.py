@@ -1,4 +1,4 @@
-from ec2_patching.cli import cli
+from bastionctl.cli import cli
 from click.testing import CliRunner
 
 

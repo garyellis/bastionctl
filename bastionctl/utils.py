@@ -20,7 +20,7 @@ def setup_logging(log_level):
 
     handler = logging.StreamHandler()
     handler.setFormatter(logging.Formatter('%(asctime)4s %(name)4s [%(filename)s:%(lineno)s - %(funcName)s()] %(levelname)4s %(message)4s'))
-    logger = logging.getLogger('ec2_patching')
+    logger = logging.getLogger('bastionctl')
     logger.addHandler(handler)
     logger.setLevel(log_level)
     return logger
@@ -74,7 +74,7 @@ def to_yaml(items, filename):
         print yaml.safe_dump(data=i, stream=None, **opts)
     else:
         logger.info('writing file to {}'.format(filename))
-        with open( filename, 'w') as s:
+        with open(filename, 'w') as s:
             yaml.safe_dump(data=i, stream=s, **opts)
 
 

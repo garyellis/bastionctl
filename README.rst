@@ -1,11 +1,11 @@
 ==================
-ec2 linux patching
+ec2 bastionctl
 ==================
 
 About
 -----
 
-ec2-patching enables ssh access to linux ec2 instances dispersed across vpcs and accounts.
+bastionctl enables ssh access to linux ec2 instances dispersed across vpcs and accounts.
 
 Features:
 
@@ -15,15 +15,16 @@ Features:
 - lists ec2 instances
 - generates ansible inventory. maps ami users and ssh keys to instances
 - ssh bastion
-- ssh instance through bastion (todo)
+- ssh instance through bastion
+- list commands as table, csv, yaml and json
 
 
 Usage
 -----
 
-ec2-patching help::
+bastionctl help::
 
-  Usage: ec2-patching [OPTIONS] COMMAND [ARGS]...
+  Usage: bastionctl [OPTIONS] COMMAND [ARGS]...
   
   
   
@@ -40,7 +41,7 @@ ec2-patching help::
 
 bastion commands::
 
-  Usage: ec2-patching bastion [OPTIONS] COMMAND [ARGS]...
+  Usage: bastionctl bastion [OPTIONS] COMMAND [ARGS]...
   
     Commands for managing a bastion ec2 instance and security group rules
   
@@ -56,7 +57,7 @@ bastion commands::
 
 vpc commands::
   
-  Usage: ec2-patching vpc [OPTIONS] COMMAND [ARGS]...
+  Usage: bastionctl vpc [OPTIONS] COMMAND [ARGS]...
   
     Commands for viewing vpc resources
   
@@ -72,15 +73,15 @@ Examples
 
 Generate the bastion cloudformation template::
 
-  $ ec2-patching --region us-west-2 --profile -ccctc-infiniti-sandbox  bastion gen-template --name bastion --key-name bastion --vpc-id -vpc-56b3952f
+  $ bastionctl --region us-west-2 --profile -ccctc-infiniti-sandbox  bastion gen-template --name bastion --key-name bastion --vpc-id -vpc-56b3952f
 
 
 Create the bastion::
 
-  $ ec2-patching --profile ccc-apply-nonproduction bastion create --vpc-id vpc-4f215a28 --name vpc-sprawler --ssh-public-key "$(cat demo.pub )"
+  $ bastionctl --profile ccc-apply-nonproduction bastion create --vpc-id vpc-4f215a28 --name vpc-sprawler --ssh-public-key "$(cat demo.pub )"
     ...
     ...
-  $ ec2-patching --profile ccc-apply-nonproduction bastion list
+  $ bastionctl --profile ccc-apply-nonproduction bastion list
     instance_id          public_ip         sg_ingress_rules  sg_id        name          vpc_id        stack_creation_time               private_ip
     -------------------  --------------  ------------------  -----------  ------------  ------------  --------------------------------  -------------
     i-03f6c8a4346064a94  34.219.208.161                  47  sg-3d980e4c  vpc-sprawler  vpc-4f215a28  2018-06-04 04:28:11.834000+00:00  10.206.31.169
@@ -88,7 +89,7 @@ Create the bastion::
 
 list vpcs summary::
 
-  $ ec2-patching --profile ccctc-primary vpc list
+  $ bastionctl --profile ccctc-primary vpc list
     vpc_id                 tag_name                              cidr              default_vpc    has_natgw    has_igw      enis_prv    enis_pub    eni_eips    enis_total    sgs_total    subnets_pub    subnets_total  tags
     ---------------------  ------------------------------------  ----------------  -------------  -----------  ---------  ----------  ----------  ----------  ------------  -----------  -------------  ---------------  ------
     vpc-26da9941           cvc2-ci                               172.21.16.0/25    False          False        True                0           5           3             5            9              3                3

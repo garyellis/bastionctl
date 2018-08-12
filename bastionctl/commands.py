@@ -1,10 +1,10 @@
-import ec2_patching.config as config
-from ec2_patching import aws
-from ec2_patching import keypairs
-from ec2_patching import cf_templates
-from ec2_patching import cf
-from ec2_patching import utils
-from ec2_patching import ansible_inventory
+import bastionctl.config as config
+from bastionctl import aws
+from bastionctl import keypairs
+from bastionctl import cf_templates
+from bastionctl import cf
+from bastionctl import utils
+from bastionctl import ansible_inventory
 import logging
 import tabulate
 import os

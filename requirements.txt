@@ -1,4 +1,4 @@
-troposphere
+coverage
 flake8
 moto
 mock

@@ -1,11 +1,11 @@
-import ec2_patching.config as config
+import bastionctl.config as config
 from datetime import datetime, timedelta
 from dateutil.tz import tzutc
 import time
 import botocore
 import boto3
 import logging
-from ec2_patching.exceptions import StackDoesNotExistError
+from bastionctl.exceptions import StackDoesNotExistError
 
 logger = logging.getLogger(__name__)
 

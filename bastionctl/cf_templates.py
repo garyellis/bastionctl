@@ -1,5 +1,5 @@
-from ec2_patching import cf_resources
-import ec2_patching.config as config
+from bastionctl import cf_resources
+import bastionctl.config as config
 from troposphere import Template
 from troposphere import GetAtt
 from troposphere import Ref
@@ -8,6 +8,7 @@ from troposphere import Output
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 # this can be genericised and placed into cf_resources module
 def sg_ingress_allow_bastion_ip(bastion_ip, sg_ids):
@@ -28,6 +29,7 @@ def sg_ingress_allow_bastion_ip(bastion_ip, sg_ids):
             )
         )
     return rules
+
 
 def sg_ingress_bastion(ips, sg_id):
     """
@@ -118,7 +120,7 @@ def create_bastion_template(name, ami_id, instance_type, key_name, subnet_id, vp
       to_port='65535',
       group_id=Ref(bastion_sg),
       cidr='0.0.0.0/0'
-    )   
+    )
 
     bastion_instance = cf_resources.ec2_instance(
       name=name,

@@ -12,8 +12,11 @@ install: ## install the virtualenv environment
 	pip install -r requirements.txt && \
 	python setup.py develop
 
+coverage: ## code coverage
+	$(activate_venv); coverage run -m pytest tests && coverage report --omit 'venv/*'
+
 lint: ## run flake8 style checks
-	$(activate_venv); flake8 ./ec2_patching
+	$(activate_venv); flake8 ./bastionctl
 
 test: ## run unit tests
 	$(activate_venv); pytest --capture=no -vvvv tests
