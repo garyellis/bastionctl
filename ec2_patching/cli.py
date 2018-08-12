@@ -94,7 +94,7 @@ def instances_list(opts, name, vpc_id, ssh_keys_path, detailed):
 )
 @click.option(
     '--name',
-    help='filter vpcs by associated bastion'
+    help='the inventory group name'
 )
 @click.option(
     '--ssh-keys-path',

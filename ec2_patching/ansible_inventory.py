@@ -5,6 +5,7 @@ import re
 
 logger = logging.getLogger(__name__)
 
+
 def sanitize_name(name):
     """
     Strips any spaces, tabs and newlines and lowers case
@@ -13,6 +14,7 @@ def sanitize_name(name):
     if name:
         sanitized_name = re.sub(r'[\n\t\s]*', '', name.lower())
     return sanitized_name
+
 
 def resolve_ansible_user(ami_name):
     """
@@ -34,6 +36,7 @@ def resolve_ansible_user(ami_name):
 
     return ansible_user
 
+
 def resolve_ansible_python_interpreter(ami_name):
     """
     """
@@ -42,56 +45,60 @@ def resolve_ansible_python_interpreter(ami_name):
         '/usr/bin/python3': '(xenial|bionic|beaver|artful)'
     }
     for python_interpreter, pattern in python_interpreters.iteritems():
-       match = re.search(pattern, ami_name, re.IGNORECASE)
-       if match:
-           logger.info('ansible_python_interpreter matched {} in {}'.format(pattern, ami_name))
-           ansible_python_interpreter = python_interpreter
+        match = re.search(pattern, ami_name, re.IGNORECASE)
+        if match:
+            logger.info('ansible_python_interpreter matched {} in {}'.format(
+                pattern, ami_name
+            ))
+            ansible_python_interpreter = python_interpreter
     return ansible_python_interpreter
 
 
-def setup_bastion_inventory(f):
-  @wraps(f)
-  def wrapped(*args, **kwargs):
-      record = kwargs.get('record')
+def mark_bastion_inventory_item(f):
+    @wraps(f)
+    def wrapped(*args, **kwargs):
+        record = kwargs.get('record')
 
-      inventory_item = f(*args, **kwargs)
-      name = inventory_item.keys()[0]
-      inventory_instance_id = inventory_item[name]['instance_id']
+        inventory_item = f(*args, **kwargs)
+        name = inventory_item.keys()[0]
 
-      if record.get('bastion'):
-          logger.info('found bastion. configuring public ip...')
-          inventory_item[name].update({ 'ansible_host': record.get('public_ip'), config.cli_tag_key: config.cli_tag_value})
-          logger.info('bastion: {}'.format(inventory_item))
+        if record.get('bastion'):
+            logger.info('found bastion. configuring public ip...')
+            inventory_item[name].update(
+                {
+                  'ansible_host': record.get('public_ip'),
+                  config.cli_tag_key: config.cli_tag_value
+                }
+            )
+            logger.info('bastion: {}'.format(inventory_item))
 
-      return inventory_item
-  return wrapped
+        return inventory_item
+    return wrapped
 
-def add_ssh_proxy(f):
-  @wraps(f)
-  def wrapped(*args, **kwargs):
-    records = kwargs.get('records')
-    group_name = kwargs.get('group_name')
-    inventory = f(*args, **kwargs)
 
-    bastion = {k:v for k,v in inventory['all']['children'][group_name]['hosts'].items() if v.get(config.cli_tag_key)}
-    if not bastion:
-        logger.info('bastion instance not found')
-        return inventory
+def is_bastion(record):
+    """
+    """
+    logger.info('checking if is bastion: {}'.format(record))
+    for v in record.values():
+        if v.get(config.cli_tag_key):
+            return True
 
-    bastion = bastion.itervalues().next()
 
-    logger.info('adding proxy: {}'.format(bastion))
-    for inventory_name in inventory['all']['children'][group_name]['hosts'].keys():
-        logger.info('working on: {}'.format(inventory_name))
-        if bastion and not inventory['all']['children'][group_name]['hosts'][inventory_name].get(config.cli_tag_key):
-          ansible_ssh_common_args = "-o ProxyCommand=\"ssh -A -W %h:%p -q {}@{}\"".format(bastion['ansible_user'], bastion['ansible_host'])
-          logger.info('ansible_ssh_args: {}'.format(ansible_ssh_common_args))
-          inventory['all']['children'][group_name]['hosts'][inventory_name].update({'ansible_ssh_common_args': ansible_ssh_common_args})
+def bastion_ssh_args(record):
+    """
+    """
+    ansible_ssh_common_args = None
+    for v in record.values():
+        ansible_ssh_common_args = "-o ProxyCommand=\"ssh -A -W %h:%p -q {}@{}\"".format(
+            v['ansible_user'],
+            v['ansible_host']
+        )
+    if ansible_ssh_common_args:
+        return ansible_ssh_common_args
 
-    return inventory
-  return wrapped
 
-@setup_bastion_inventory
+@mark_bastion_inventory_item
 def create_host_inventory_item(record):
     """
     Configures the ansible inventory item
@@ -129,7 +136,7 @@ def create_host_inventory_item(record):
     logger.info('created inventory item: {}'.format({ inventory_item_key : inventory_host_vars }))
     return { inventory_item_key : inventory_host_vars }
 
-@add_ssh_proxy
+
 def to_inventory(records, group_name):
     """
     """
@@ -138,13 +145,25 @@ def to_inventory(records, group_name):
         'all': {
           'children': {
             group_name: {
+              'vars': {},
               'hosts': {}
             }
           }
         }
     }
+
     for i in records:
         ansible_host = create_host_inventory_item(record=i)
-        inventory['all']['children'][group_name]['hosts'].update(ansible_host)
+        if is_bastion(ansible_host):
+            bastion_group_name = '{}-bastion'.format(group_name)
+            inventory['all']['children'][bastion_group_name] = {
+              'hosts': ansible_host
+            }
+
+            inventory['all']['children'][group_name]['vars'].update({
+                'ansible_ssh_common_args': bastion_ssh_args(ansible_host)
+            })
+        else:
+            inventory['all']['children'][group_name]['hosts'].update(ansible_host)
 
     return inventory
