@@ -1,4 +1,4 @@
-import ec2_patching.utils
+import bastionctl.utils
 import mock
 
 
@@ -9,7 +9,7 @@ class MockResponse():
 
 
 class TestUtils():
-    @mock.patch('ec2_patching.utils.requests.get', side_effect=MockResponse)
+    @mock.patch('bastionctl.utils.requests.get', side_effect=MockResponse)
     def test_get_public_ip(self, mock_get):
-        ip = ec2_patching.utils.get_public_ip()
+        ip = bastionctl.utils.get_public_ip()
         assert '/32' in ip

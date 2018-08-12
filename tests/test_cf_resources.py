@@ -1,4 +1,4 @@
-from ec2_patching import cf_resources
+from bastionctl import cf_resources
 from troposphere import Template
 from moto import mock_cloudformation
 

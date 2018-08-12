@@ -1,5 +1,5 @@
-import ec2_patching.config as config
-import ec2_patching.keypairs
+import bastionctl.config as config
+import bastionctl.keypairs
 import boto3
 from botocore.exceptions import ClientError
 from operator import itemgetter
@@ -303,7 +303,7 @@ def is_bastion_instance(session, name, instance):
     return is_bastion
 
 
-@ec2_patching.keypairs.add_ssh_keys_fingerprints
+@bastionctl.keypairs.add_ssh_keys_fingerprints
 def get_vpc_instances(session, vpc_id, path=None, detailed=False, bastion_name=None):
     """
     """

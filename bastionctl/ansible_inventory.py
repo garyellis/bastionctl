@@ -1,4 +1,4 @@
-import ec2_patching.config as config
+import bastionctl.config as config
 from functools import wraps
 import logging
 import re

@@ -1,6 +1,6 @@
-import ec2_patching.config as config
-import ec2_patching.commands
-import ec2_patching.utils
+import bastionctl.config as config
+import bastionctl.commands
+import bastionctl.utils
 import click
 
 
@@ -38,14 +38,14 @@ pass_opts = click.make_pass_decorator(Opts, ensure=True)
 def cli(opts, log_level, profile, region, version):
     """
     """
-    logger = ec2_patching.utils.setup_logging(log_level)
+    logger = bastionctl.utils.setup_logging(log_level)
     logger.debug('log level: {}'.format(log_level))
     opts.profile = profile
     opts.region = region
     # set state in config module
     config.opts = opts
     if version:
-      click.echo(ec2_patching.config.cli_version)
+      click.echo(bastionctl.config.cli_version)
 
 
 @click.group(name='instances')
@@ -78,7 +78,7 @@ def instances_list(opts, name, vpc_id, ssh_keys_path, detailed):
     """
     List instances
     """
-    ec2_patching.commands.instances_list(
+    bastionctl.commands.instances_list(
         profile=opts.profile,
         region=opts.region,
         vpc_id=vpc_id,
@@ -109,7 +109,7 @@ def instances_gen_ansible_inventory(opts, name, vpc_id, ssh_keys_path, out):
     """
     Generate an ansible inventory file
     """
-    ec2_patching.commands.instances_gen_ansible_inventory(
+    bastionctl.commands.instances_gen_ansible_inventory(
         profile=opts.profile,
         region=opts.region,
         vpc_id=vpc_id,
@@ -145,7 +145,7 @@ def vpcs_list(opts, name, cidr, fmt):
     """
     List vpcs
     """
-    ec2_patching.commands.vpc_list(
+    bastionctl.commands.vpc_list(
         profile=opts.profile,
         region=opts.region,
         output_format=fmt
@@ -193,7 +193,7 @@ def gen_template(opts, allow_ip, ami_id, instance_type, key_name, name, vpc_id):
     Generates the bastion cloudformation template
     """
 
-    bastion_template = ec2_patching.commands.gen_bastion_template(
+    bastion_template = bastionctl.commands.gen_bastion_template(
         name=name,
         vpc_id=vpc_id,
         ami_id=ami_id,
@@ -245,7 +245,7 @@ def create_stack(opts, allow_ip, ami_id, instance_type, key_name, name, ssh_publ
     """
     Creates the bastion cloudformation stack
     """
-    ec2_patching.commands.create_bastion(
+    bastionctl.commands.create_bastion(
         name=name,
         ami_id=ami_id,
         instance_type=instance_type,
@@ -269,7 +269,7 @@ def delete_stack(opts, name):
     """
     Deletes the bastion cloudformation stack
     """
-    ec2_patching.commands.delete_bastion(
+    bastionctl.commands.delete_bastion(
         name=name,
         profile=opts.profile,
         region=opts.region
@@ -282,7 +282,7 @@ def list_stacks(opts):
     """
     List bastions
     """
-    ec2_patching.commands.list_bastion(
+    bastionctl.commands.list_bastion(
         profile=opts.profile,
         region=opts.region,
     )
@@ -298,7 +298,7 @@ def stop_bastion(opts, name):
     """
     Stop the bastion stack ec2 instance
     """
-    ec2_patching.commands.stop_bastion(
+    bastionctl.commands.stop_bastion(
         profile=opts.profile,
         region=opts.region,
         name=name
@@ -315,7 +315,7 @@ def start_bastion(opts, name):
     """
     Start the bastion stack ec2 instance
     """
-    ec2_patching.commands.start_bastion(
+    bastionctl.commands.start_bastion(
         profile=opts.profile,
         region=opts.region,
         name=name
@@ -337,7 +337,7 @@ def bastion_ssh(opts, name, user):
     """
     ssh into the bastion instance
     """
-    ec2_patching.commands.ssh(
+    bastionctl.commands.ssh(
         profile=opts.profile,
         region=opts.region,
         name=name,

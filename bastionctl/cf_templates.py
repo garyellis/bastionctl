@@ -1,5 +1,5 @@
-from ec2_patching import cf_resources
-import ec2_patching.config as config
+from bastionctl import cf_resources
+import bastionctl.config as config
 from troposphere import Template
 from troposphere import GetAtt
 from troposphere import Ref

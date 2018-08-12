@@ -20,7 +20,7 @@ def setup_logging(log_level):
 
     handler = logging.StreamHandler()
     handler.setFormatter(logging.Formatter('%(asctime)4s %(name)4s [%(filename)s:%(lineno)s - %(funcName)s()] %(levelname)4s %(message)4s'))
-    logger = logging.getLogger('ec2_patching')
+    logger = logging.getLogger('bastionctl')
     logger.addHandler(handler)
     logger.setLevel(log_level)
     return logger
